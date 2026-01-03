@@ -58,9 +58,26 @@ func (r *Renderer) DrawImage(w, h int, bgHex, fgHex, text string, rounded, bold 
 func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, rounded, bold bool, format ImageFormat) ([]byte, error) {
 	dc := gg.NewContext(w, h)
 
-	bg := ParseHexColor(bgHex)
+	// Check if bgHex contains a gradient (comma-separated colors)
+	if strings.Contains(bgHex, ",") {
+		colors := strings.Split(bgHex, ",")
+		if len(colors) == 2 {
+			// Create linear gradient from left to right
+			gradient := gg.NewLinearGradient(0, 0, float64(w), 0)
+			gradient.AddColorStop(0, ParseHexColor(colors[0]))
+			gradient.AddColorStop(1, ParseHexColor(colors[1]))
+			dc.SetFillStyle(gradient)
+		} else {
+			// Fallback to solid color if more than 2 colors
+			dc.SetColor(ParseHexColor(bgHex))
+		}
+	} else {
+		// Solid color
+		bg := ParseHexColor(bgHex)
+		dc.SetColor(bg)
+	}
+
 	fg := ParseHexColor(fgHex)
-	dc.SetColor(bg)
 	if rounded {
 		dc.DrawCircle(float64(w)/2, float64(h)/2, float64(w)/2)
 		dc.Fill()
@@ -176,6 +193,24 @@ func GenerateColorHash(seed string) string {
 
 // GetContrastColor determines if white or black text should be used
 func GetContrastColor(bgHex string) string {
+	// Handle gradient colors by averaging the two colors
+	if strings.Contains(bgHex, ",") {
+		colors := strings.Split(bgHex, ",")
+		if len(colors) == 2 {
+			c1 := ParseHexColor(colors[0]).(color.RGBA)
+			c2 := ParseHexColor(colors[1]).(color.RGBA)
+			// Average the two colors
+			r := (float64(c1.R) + float64(c2.R)) / 2.0 / 255.0
+			g := (float64(c1.G) + float64(c2.G)) / 2.0 / 255.0
+			b := (float64(c1.B) + float64(c2.B)) / 2.0 / 255.0
+			luminance := (0.2126 * r) + (0.7152 * g) + (0.0722 * b)
+			if luminance > 0.5 {
+				return "000000"
+			}
+			return "ffffff"
+		}
+	}
+
 	// 1. Parse the background color
 	c := ParseHexColor(bgHex).(color.RGBA)
 
