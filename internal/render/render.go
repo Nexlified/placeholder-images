@@ -96,7 +96,7 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 // encodeImage encodes the image in the specified format
 func encodeImage(img image.Image, format ImageFormat) ([]byte, error) {
 	var buf bytes.Buffer
-	
+
 	switch format {
 	case FormatPNG:
 		if err := png.Encode(&buf, img); err != nil {
@@ -120,7 +120,7 @@ func encodeImage(img image.Image, format ImageFormat) ([]byte, error) {
 			return nil, fmt.Errorf("encode default format (webp): %w", err)
 		}
 	}
-	
+
 	return buf.Bytes(), nil
 }
 

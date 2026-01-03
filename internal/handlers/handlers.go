@@ -39,7 +39,7 @@ func extractFormat(filename string) (render.ImageFormat, string) {
 	// Default to WebP
 	format := render.FormatWebP
 	name := filename
-	
+
 	// Check for common extensions
 	if strings.HasSuffix(filename, ".png") {
 		format = render.FormatPNG
@@ -57,7 +57,7 @@ func extractFormat(filename string) (render.ImageFormat, string) {
 		format = render.FormatWebP
 		name = strings.TrimSuffix(filename, ".webp")
 	}
-	
+
 	return format, name
 }
 
@@ -80,7 +80,7 @@ func getContentType(format render.ImageFormat) string {
 func (s *Service) handleAvatar(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
 	format := render.FormatWebP // Default to WebP
-	
+
 	if strings.HasPrefix(r.URL.Path, "/avatar/") {
 		parts := strings.Split(r.URL.Path, "/")
 		if len(parts) > 2 && parts[2] != "" {
@@ -117,7 +117,7 @@ func (s *Service) handleAvatar(w http.ResponseWriter, r *http.Request) {
 func (s *Service) handlePlaceholder(w http.ResponseWriter, r *http.Request) {
 	width, height := config.DefaultSize, config.DefaultSize
 	pathMetric := strings.TrimPrefix(r.URL.Path, "/placeholder/")
-	
+
 	// Extract format from path
 	format, pathMetric := extractFormat(pathMetric)
 
