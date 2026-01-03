@@ -1,0 +1,22 @@
+# Ignore build artifacts
+avata-go
+avata-go-*
+*.exe
+*.tar.gz
+*.zip
+
+# Go test cache
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
