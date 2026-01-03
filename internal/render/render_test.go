@@ -36,6 +36,7 @@ func TestGetContrastColorWithGradient(t *testing.T) {
 		{"red to blue", "ff0000,0000ff", "ffffff"},
 		{"single color still works", "ffffff", "000000"},
 		{"single dark color", "000000", "ffffff"},
+		{"more than 2 colors uses first", "cccccc,00ff00,0000ff", "000000"},
 	}
 
 	for _, tc := range cases {
@@ -63,5 +64,11 @@ func TestDrawImageWithGradient(t *testing.T) {
 	_, err = r.DrawImageWithFormat(400, 300, "ff0000", "ffffff", "Test", false, false, FormatPNG)
 	if err != nil {
 		t.Fatalf("failed to draw image with solid color: %v", err)
+	}
+
+	// Test with more than 2 colors (should use first color)
+	_, err = r.DrawImageWithFormat(400, 300, "ff0000,00ff00,0000ff", "ffffff", "Test", false, false, FormatPNG)
+	if err != nil {
+		t.Fatalf("failed to draw image with more than 2 colors: %v", err)
 	}
 }

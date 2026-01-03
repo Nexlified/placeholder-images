@@ -49,6 +49,25 @@ const (
 	FormatWebP ImageFormat = "webp"
 )
 
+// parseGradientColors parses a comma-separated color string into two colors.
+// Returns the two colors if valid gradient (exactly 2 colors).
+// Returns first color and empty string if more than 2 colors.
+// Returns empty strings if not a gradient.
+func parseGradientColors(bgHex string) (string, string) {
+	if !strings.Contains(bgHex, ",") {
+		return "", ""
+	}
+	colors := strings.Split(bgHex, ",")
+	if len(colors) == 2 {
+		return strings.TrimSpace(colors[0]), strings.TrimSpace(colors[1])
+	}
+	if len(colors) > 2 {
+		// More than 2 colors - return first color only
+		return strings.TrimSpace(colors[0]), ""
+	}
+	return "", ""
+}
+
 // DrawImage renders an image with provided options.
 func (r *Renderer) DrawImage(w, h int, bgHex, fgHex, text string, rounded, bold bool) ([]byte, error) {
 	return r.DrawImageWithFormat(w, h, bgHex, fgHex, text, rounded, bold, FormatWebP)
@@ -59,22 +78,20 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 	dc := gg.NewContext(w, h)
 
 	// Check if bgHex contains a gradient (comma-separated colors)
-	if strings.Contains(bgHex, ",") {
-		colors := strings.Split(bgHex, ",")
-		if len(colors) == 2 {
-			// Create linear gradient from left to right
-			gradient := gg.NewLinearGradient(0, 0, float64(w), 0)
-			gradient.AddColorStop(0, ParseHexColor(colors[0]))
-			gradient.AddColorStop(1, ParseHexColor(colors[1]))
-			dc.SetFillStyle(gradient)
+	color1, color2 := parseGradientColors(bgHex)
+	if color1 != "" && color2 != "" {
+		// Create linear gradient from left to right
+		gradient := gg.NewLinearGradient(0, 0, float64(w), 0)
+		gradient.AddColorStop(0, ParseHexColor(color1))
+		gradient.AddColorStop(1, ParseHexColor(color2))
+		dc.SetFillStyle(gradient)
+	} else {
+		// Solid color (use first color if comma-separated but invalid)
+		if color1 != "" {
+			dc.SetColor(ParseHexColor(color1))
 		} else {
-			// Fallback to solid color if more than 2 colors
 			dc.SetColor(ParseHexColor(bgHex))
 		}
-	} else {
-		// Solid color
-		bg := ParseHexColor(bgHex)
-		dc.SetColor(bg)
 	}
 
 	fg := ParseHexColor(fgHex)
@@ -194,21 +211,24 @@ func GenerateColorHash(seed string) string {
 // GetContrastColor determines if white or black text should be used
 func GetContrastColor(bgHex string) string {
 	// Handle gradient colors by averaging the two colors
-	if strings.Contains(bgHex, ",") {
-		colors := strings.Split(bgHex, ",")
-		if len(colors) == 2 {
-			c1 := ParseHexColor(colors[0]).(color.RGBA)
-			c2 := ParseHexColor(colors[1]).(color.RGBA)
-			// Average the two colors
-			r := (float64(c1.R) + float64(c2.R)) / 2.0 / 255.0
-			g := (float64(c1.G) + float64(c2.G)) / 2.0 / 255.0
-			b := (float64(c1.B) + float64(c2.B)) / 2.0 / 255.0
-			luminance := (0.2126 * r) + (0.7152 * g) + (0.0722 * b)
-			if luminance > 0.5 {
-				return "000000"
-			}
-			return "ffffff"
+	color1, color2 := parseGradientColors(bgHex)
+	if color1 != "" && color2 != "" {
+		c1 := ParseHexColor(color1).(color.RGBA)
+		c2 := ParseHexColor(color2).(color.RGBA)
+		// Average the two colors
+		r := (float64(c1.R) + float64(c2.R)) / 2.0 / 255.0
+		g := (float64(c1.G) + float64(c2.G)) / 2.0 / 255.0
+		b := (float64(c1.B) + float64(c2.B)) / 2.0 / 255.0
+		luminance := (0.2126 * r) + (0.7152 * g) + (0.0722 * b)
+		if luminance > 0.5 {
+			return "000000"
 		}
+		return "ffffff"
+	}
+
+	// Parse single color (or use first color if gradient parsing failed)
+	if color1 != "" {
+		bgHex = color1
 	}
 
 	// 1. Parse the background color
