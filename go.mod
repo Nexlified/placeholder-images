@@ -10,3 +10,5 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	golang.org/x/image v0.34.0
 )
+
+require github.com/chai2010/webp v1.4.0
