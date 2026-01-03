@@ -66,7 +66,7 @@ Creates a rectangular placeholder image with custom dimensions and optional over
 - **Format**: Images are served as WebP by default when no extension is specified. Use `.png`, `.jpg`, `.jpeg`, `.gif`, or `.webp` extension to request a specific format.
 - **Dimensions**: Can also use query parameters `w` and `h` (default `128`).
 - **Text**: `text` query parameter (defaults to "{width} x {height}").
-- **Background Color**: `bg` query parameter (hex, default `cccccc`).
+- **Background Color**: `bg` query parameter (hex, default `cccccc`). Supports gradients with comma-separated colors (e.g., `ff0000,0000ff` for red to blue).
 - **Text Color**: `color` query parameter (hex, default auto-contrasted).
 
 Examples:
@@ -83,6 +83,12 @@ curl "http://localhost:8080/placeholder/1200x600.jpg?text=Banner"
 
 # GIF format
 curl "http://localhost:8080/placeholder/400x400.gif"
+
+# Gradient background (red to blue)
+curl "http://localhost:8080/placeholder/800x400.png?bg=ff0000,0000ff&text=Gradient"
+
+# Gradient background (green to yellow)
+curl "http://localhost:8080/placeholder/1200x600?bg=00ff00,ffff00"
 ```
 
 ## Response Characteristics
