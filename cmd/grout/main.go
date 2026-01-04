@@ -7,9 +7,9 @@ import (
 
 	"github.com/hashicorp/golang-lru/v2"
 
-	"go-avatars/internal/config"
-	"go-avatars/internal/handlers"
-	"go-avatars/internal/render"
+	"grout/internal/config"
+	"grout/internal/handlers"
+	"grout/internal/render"
 )
 
 func main() {
@@ -29,6 +29,6 @@ func main() {
 	mux := http.NewServeMux()
 	svc.RegisterRoutes(mux)
 
-	fmt.Println("AvataGo running on", cfg.Addr)
+	fmt.Println("Grout running on", cfg.Addr)
 	log.Fatal(http.ListenAndServe(cfg.Addr, mux))
 }
