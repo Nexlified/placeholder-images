@@ -188,8 +188,8 @@ func (r *Renderer) drawRasterImageWithWrapping(w, h int, bgHex, fgHex, text stri
 	dc.SetFontFace(truetype.NewFace(font, &truetype.Options{Size: fontSize}))
 	dc.SetColor(fg)
 
-	// Wrap text if it's long enough (more than 2 characters = likely a quote/joke)
-	if len(text) > 2 {
+	// Wrap text if it's long enough (more than MinTextLengthForWrapping characters = likely a quote/joke)
+	if len(text) > config.MinTextLengthForWrapping {
 		lines := r.wrapText(dc, text, float64(w), fontSize)
 		drawMultiLineText(dc, lines, float64(w), float64(h), fontSize)
 	} else {
@@ -350,7 +350,7 @@ func (r *Renderer) generateSVGWithWrapping(w, h int, bgHex, fgHex, text string, 
 	}
 
 	// For long text, wrap it
-	if len(text) > 2 {
+	if len(text) > config.MinTextLengthForWrapping {
 		lines := wrapTextForSVG(text, float64(w), fontSize)
 		lineHeight := fontSize * 1.5
 		totalHeight := float64(len(lines)) * lineHeight
@@ -383,8 +383,8 @@ func wrapTextForSVG(text string, imageWidth, fontSize float64) []string {
 	maxWidth := imageWidth - (2 * padding)
 	maxCharsPerLine := int(maxWidth / charWidth)
 	
-	if maxCharsPerLine < 10 {
-		maxCharsPerLine = 10
+	if maxCharsPerLine < config.MinCharsPerLine {
+		maxCharsPerLine = config.MinCharsPerLine
 	}
 	
 	words := strings.Fields(text)
