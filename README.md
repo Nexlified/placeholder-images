@@ -1,6 +1,6 @@
 # Grout API Guide
 
-Grout is a small HTTP service that renders PNG avatars with user initials and rectangular placeholder images. It relies on the `github.com/fogleman/gg` drawing library and embeds Go fonts for crisp text output.
+Grout is a small HTTP service that renders SVG avatars with user initials and rectangular placeholder images. It relies on the `github.com/fogleman/gg` drawing library and embeds Go fonts for crisp text output.
 
 ## Quick Start
 
@@ -34,8 +34,8 @@ The server listens on `:8080` by default and exposes the routes below.
 
 Generates a square avatar that displays the initials derived from the provided name.
 
-- **Path**: `/avatar/{name}[.ext]` where `ext` can be `png`, `jpg`, `jpeg`, `gif`, or `webp`. You can also use the `name` query parameter.
-- **Format**: Images are served as WebP by default when no extension is specified. Use `.png`, `.jpg`, `.jpeg`, `.gif`, or `.webp` extension to request a specific format.
+- **Path**: `/avatar/{name}[.ext]` where `ext` can be `svg`, `png`, `jpg`, `jpeg`, `gif`, or `webp`. You can also use the `name` query parameter.
+- **Format**: Images are served as SVG by default when no extension is specified. Use `.svg`, `.png`, `.jpg`, `.jpeg`, `.gif`, or `.webp` extension to request a specific format.
 - **Size**: `size` query parameter (default `128`), applied to both width and height.
 - **Background Color**: `background` query parameter accepts hex (`f0e9e9`) or the literal `random` to derive a deterministic color per name.
 - **Text Color**: `color` query parameter (hex, default auto-contrasted).
@@ -45,8 +45,11 @@ Generates a square avatar that displays the initials derived from the provided n
 Examples:
 
 ```bash
-# Default WebP format
+# Default SVG format
 curl "http://localhost:8080/avatar/Jane+Doe?size=256&rounded=true&bold=true&background=random"
+
+# SVG format (explicit)
+curl "http://localhost:8080/avatar/Jane+Doe.svg?size=256&rounded=true&bold=true&background=random"
 
 # PNG format
 curl "http://localhost:8080/avatar/Jane+Doe.png?size=256&rounded=true&bold=true&background=random"
@@ -54,7 +57,7 @@ curl "http://localhost:8080/avatar/Jane+Doe.png?size=256&rounded=true&bold=true&
 # JPG format
 curl "http://localhost:8080/avatar/Jane+Doe.jpg?size=256"
 
-# WebP format (explicit)
+# WebP format
 curl "http://localhost:8080/avatar/Jane+Doe.webp?size=256"
 ```
 
@@ -62,8 +65,8 @@ curl "http://localhost:8080/avatar/Jane+Doe.webp?size=256"
 
 Creates a rectangular placeholder image with custom dimensions and optional overlay text.
 
-- **Path Form**: `/placeholder/{width}x{height}[.ext]` where `ext` can be `png`, `jpg`, `jpeg`, `gif`, or `webp`. If extension is omitted, images are served as WebP by default.
-- **Format**: Images are served as WebP by default when no extension is specified. Use `.png`, `.jpg`, `.jpeg`, `.gif`, or `.webp` extension to request a specific format.
+- **Path Form**: `/placeholder/{width}x{height}[.ext]` where `ext` can be `svg`, `png`, `jpg`, `jpeg`, `gif`, or `webp`. If extension is omitted, images are served as SVG by default.
+- **Format**: Images are served as SVG by default when no extension is specified. Use `.svg`, `.png`, `.jpg`, `.jpeg`, `.gif`, or `.webp` extension to request a specific format.
 - **Dimensions**: Can also use query parameters `w` and `h` (default `128`).
 - **Text**: `text` query parameter (defaults to "{width} x {height}").
 - **Quote**: `quote=true` query parameter to use a random quote instead of custom text.
@@ -97,8 +100,11 @@ Creates a rectangular placeholder image with custom dimensions and optional over
 Examples:
 
 ```bash
-# Default WebP format
+# Default SVG format
 curl "http://localhost:8080/placeholder/800x400?text=Hero+Image&bg=222222&color=f5f5f5"
+
+# SVG format (explicit)
+curl "http://localhost:8080/placeholder/800x400.svg?text=Hero+Image&bg=222222&color=f5f5f5"
 
 # PNG format
 curl "http://localhost:8080/placeholder/800x400.png?text=Hero+Image&bg=222222&color=f5f5f5"
@@ -109,11 +115,11 @@ curl "http://localhost:8080/placeholder/1200x600.jpg?text=Banner"
 # GIF format
 curl "http://localhost:8080/placeholder/400x400.gif"
 
-# Gradient background (red to blue)
-curl "http://localhost:8080/placeholder/800x400.png?bg=ff0000,0000ff&text=Gradient"
+# Gradient background (red to blue, SVG)
+curl "http://localhost:8080/placeholder/800x400?bg=ff0000,0000ff&text=Gradient"
 
-# Gradient background (green to yellow)
-curl "http://localhost:8080/placeholder/1200x600?bg=00ff00,ffff00"
+# Gradient background (green to yellow, PNG)
+curl "http://localhost:8080/placeholder/1200x600.png?bg=00ff00,ffff00"
 
 # Random quote (any category)
 curl "http://localhost:8080/placeholder/1200x400?quote=true"
@@ -130,7 +136,7 @@ curl "http://localhost:8080/placeholder/1000x500?joke=true&bg=2c3e50&color=ecf0f
 
 ## Response Characteristics
 
-- Images are served as WebP by default (when no extension is specified). The `Content-Type` header is set based on the requested format: `image/webp`, `image/png`, `image/jpeg`, or `image/gif`.
+- Images are served as SVG by default (when no extension is specified). The `Content-Type` header is set based on the requested format: `image/svg+xml`, `image/webp`, `image/png`, `image/jpeg`, or `image/gif`.
 - Successful responses include `Cache-Control: public, max-age=31536000, immutable` and an `ETag` keyed by the query parameters and format.
 - Cached entries are stored in an in-memory LRU (`CacheSize = 2000`) to reduce rendering overhead. Cache hits expose the header `X-Cache: HIT`.
 
