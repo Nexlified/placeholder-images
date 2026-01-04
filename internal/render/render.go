@@ -170,14 +170,14 @@ func generateSVG(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSi
 
 	// Check if bgHex contains a gradient (comma-separated colors)
 	color1, color2 := parseGradientColors(bgHex)
-	
+
 	// Calculate radius for rounded shapes (use minimum dimension to ensure circle fits)
 	radius := w
 	if h < w {
 		radius = h
 	}
 	radius = radius / 2
-	
+
 	if color1 != "" && color2 != "" {
 		// Generate unique gradient ID based on colors to avoid conflicts
 		gradientID := fmt.Sprintf("grad_%s_%s", color1, color2)
