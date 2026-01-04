@@ -158,3 +158,71 @@ func TestPlaceholderHandlerGradient(t *testing.T) {
 		})
 	}
 }
+
+func TestHomeHandler(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
+	svc.RegisterRoutes(mux)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 got %d", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "text/html; charset=utf-8" {
+		t.Fatalf("expected content-type text/html; charset=utf-8 got %s", ct)
+	}
+	if rec.Body.Len() == 0 {
+		t.Fatal("expected body to contain HTML content")
+	}
+
+	body := rec.Body.String()
+	expectedStrings := []string{
+		"AvataGo",
+		"Made with love in Nexlified Lab",
+		"https://github.com/Nexlified/grout",
+		"Avatar Examples",
+		"Placeholder Examples",
+		"Avatar URL Parameters",
+		"Placeholder URL Parameters",
+	}
+
+	for _, expected := range expectedStrings {
+		if !contains(body, expected) {
+			t.Errorf("expected body to contain %q", expected)
+		}
+	}
+}
+
+func TestHomeHandlerNotFound(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
+	svc.RegisterRoutes(mux)
+
+	req := httptest.NewRequest(http.MethodGet, "/nonexistent", nil)
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 got %d", rec.Code)
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		(len(s) > 0 && (s[0:len(substr)] == substr || contains(s[1:], substr))))
+}
