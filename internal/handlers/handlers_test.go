@@ -348,3 +348,122 @@ func TestPlaceholderHandlerWithInvalidCategory(t *testing.T) {
 		t.Fatal("expected body to contain image data")
 	}
 }
+
+func TestErrorPage404(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
+	svc.RegisterRoutes(mux)
+
+	req := httptest.NewRequest(http.MethodGet, "/nonexistent", nil)
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 got %d", rec.Code)
+	}
+
+	body := rec.Body.String()
+	// Check that it's HTML, not plain text
+	if !strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("expected HTML response for 404")
+	}
+	// Check for key error page elements
+	if !strings.Contains(body, "404") {
+		t.Error("expected body to contain 404 status code")
+	}
+	if !strings.Contains(body, "Not Found") {
+		t.Error("expected body to contain 'Not Found'")
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "text/html; charset=utf-8" {
+		t.Fatalf("expected content-type text/html; charset=utf-8 got %s", ct)
+	}
+}
+
+func TestServeErrorPage4xx(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+
+	tests := []struct {
+		name       string
+		statusCode int
+		message    string
+	}{
+		{"400 Bad Request", http.StatusBadRequest, "Invalid request parameters"},
+		{"403 Forbidden", http.StatusForbidden, "Access denied"},
+		{"404 Not Found", http.StatusNotFound, "Page not found"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+
+			svc.serveErrorPage(rec, tt.statusCode, tt.message)
+
+			if rec.Code != tt.statusCode {
+				t.Fatalf("expected %d got %d", tt.statusCode, rec.Code)
+			}
+
+			body := rec.Body.String()
+			if !strings.Contains(body, "<!DOCTYPE html>") {
+				t.Error("expected HTML response")
+			}
+			if !strings.Contains(body, tt.message) {
+				t.Errorf("expected body to contain message: %s", tt.message)
+			}
+			if ct := rec.Header().Get("Content-Type"); ct != "text/html; charset=utf-8" {
+				t.Fatalf("expected content-type text/html; charset=utf-8 got %s", ct)
+			}
+		})
+	}
+}
+
+func TestServeErrorPage5xx(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+
+	tests := []struct {
+		name       string
+		statusCode int
+		message    string
+	}{
+		{"500 Internal Server Error", http.StatusInternalServerError, "Something went wrong"},
+		{"503 Service Unavailable", http.StatusServiceUnavailable, "Service temporarily unavailable"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+
+			svc.serveErrorPage(rec, tt.statusCode, tt.message)
+
+			if rec.Code != tt.statusCode {
+				t.Fatalf("expected %d got %d", tt.statusCode, rec.Code)
+			}
+
+			body := rec.Body.String()
+			if !strings.Contains(body, "<!DOCTYPE html>") {
+				t.Error("expected HTML response")
+			}
+			if !strings.Contains(body, tt.message) {
+				t.Errorf("expected body to contain message: %s", tt.message)
+			}
+			if ct := rec.Header().Get("Content-Type"); ct != "text/html; charset=utf-8" {
+				t.Fatalf("expected content-type text/html; charset=utf-8 got %s", ct)
+			}
+		})
+	}
+}

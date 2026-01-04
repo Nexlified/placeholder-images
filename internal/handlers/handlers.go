@@ -23,6 +23,12 @@ var homePageTemplate string
 //go:embed web/play.html
 var playPageTemplate string
 
+//go:embed web/error4xx.html
+var error4xxTemplate string
+
+//go:embed web/error5xx.html
+var error5xxTemplate string
+
 //go:embed web/favicon.png
 var faviconData []byte
 
@@ -217,7 +223,11 @@ func (s *Service) serveImage(w http.ResponseWriter, r *http.Request, cacheKey st
 
 	imgData, err := generator()
 	if err != nil {
-		http.Error(w, "Failed to generate image", http.StatusInternalServerError)
+		// Clear headers set earlier since we're serving HTML now
+		w.Header().Del("Content-Type")
+		w.Header().Del("Cache-Control")
+		w.Header().Del("ETag")
+		s.serveErrorPage(w, http.StatusInternalServerError, "Failed to generate image. Please try again later or contact support if the problem persists.")
 		return
 	}
 
@@ -240,7 +250,7 @@ func (s *Service) HandleHealth(w http.ResponseWriter, r *http.Request) {
 
 func (s *Service) handleHome(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		s.handle404(w, r)
 		return
 	}
 
@@ -275,4 +285,41 @@ func (s *Service) handleFavicon(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+}
+
+// serveErrorPage renders an error page with the given status code and message
+func (s *Service) serveErrorPage(w http.ResponseWriter, statusCode int, message string) {
+	var template string
+	var statusText string
+
+	// Determine which template to use based on status code
+	if statusCode >= 400 && statusCode < 500 {
+		template = error4xxTemplate
+	} else {
+		template = error5xxTemplate
+	}
+
+	// Get standard status text
+	statusText = http.StatusText(statusCode)
+	if statusText == "" {
+		statusText = "Error"
+	}
+
+	// Replace placeholders
+	html := strings.ReplaceAll(template, "{{STATUS_CODE}}", fmt.Sprintf("%d", statusCode))
+	html = strings.ReplaceAll(html, "{{STATUS_TEXT}}", statusText)
+	html = strings.ReplaceAll(html, "{{ERROR_MESSAGE}}", message)
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(statusCode)
+	_, err := w.Write([]byte(html))
+	if err != nil {
+		return
+	}
+}
+
+// handle404 handles all 404 Not Found errors with a custom error page
+func (s *Service) handle404(w http.ResponseWriter, r *http.Request) {
+	message := "The page you're looking for doesn't exist. It might have been moved or deleted."
+	s.serveErrorPage(w, http.StatusNotFound, message)
 }
