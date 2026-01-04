@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -171,4 +172,13 @@ func (s *Service) serveImage(w http.ResponseWriter, r *http.Request, cacheKey st
 	s.cache.Add(cacheKey, imgData)
 	w.Header().Set("X-Cache", "MISS")
 	_, _ = w.Write(imgData)
+}
+
+func (s *Service) HandleHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "healthy",
+		"version": "1.0.0",
+	})
 }
