@@ -47,6 +47,7 @@ const (
 	FormatJPEG ImageFormat = "jpeg"
 	FormatGIF  ImageFormat = "gif"
 	FormatWebP ImageFormat = "webp"
+	FormatSVG  ImageFormat = "svg"
 )
 
 // parseGradientColors parses a comma-separated color string into two colors.
@@ -70,11 +71,31 @@ func parseGradientColors(bgHex string) (string, string) {
 
 // DrawImage renders an image with provided options.
 func (r *Renderer) DrawImage(w, h int, bgHex, fgHex, text string, rounded, bold bool) ([]byte, error) {
-	return r.DrawImageWithFormat(w, h, bgHex, fgHex, text, rounded, bold, FormatWebP)
+	return r.DrawImageWithFormat(w, h, bgHex, fgHex, text, rounded, bold, FormatSVG)
 }
 
 // DrawImageWithFormat renders an image in the specified format with provided options.
 func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, rounded, bold bool, format ImageFormat) ([]byte, error) {
+	// Calculate font size for consistent rendering across formats
+	minDim := float64(w)
+	if float64(h) < minDim {
+		minDim = float64(h)
+	}
+
+	fontSize := minDim * 0.5
+	if len(text) > 2 {
+		fontSize = minDim * 0.15
+		if fontSize < 12 {
+			fontSize = 12
+		}
+	}
+
+	// For SVG format, generate directly without rasterization
+	if format == FormatSVG {
+		return generateSVG(w, h, bgHex, fgHex, text, rounded, bold, fontSize)
+	}
+
+	// For raster formats, create the image using gg
 	dc := gg.NewContext(w, h)
 
 	// Check if bgHex contains a gradient (comma-separated colors)
@@ -103,19 +124,6 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 		dc.Fill()
 	}
 
-	minDim := float64(w)
-	if float64(h) < minDim {
-		minDim = float64(h)
-	}
-
-	fontSize := minDim * 0.5
-	if len(text) > 2 {
-		fontSize = minDim * 0.15
-		if fontSize < 12 {
-			fontSize = 12
-		}
-	}
-
 	font := r.regular
 	if bold {
 		font = r.bold
@@ -127,7 +135,7 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 	return encodeImage(dc.Image(), format)
 }
 
-// encodeImage encodes the image in the specified format
+// encodeImage encodes a rasterized image in the specified format (PNG, JPEG, GIF, WebP)
 func encodeImage(img image.Image, format ImageFormat) ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -145,15 +153,90 @@ func encodeImage(img image.Image, format ImageFormat) ([]byte, error) {
 			return nil, fmt.Errorf("encode gif: %w", err)
 		}
 	case FormatWebP:
-		fallthrough
-	default:
-		// Default to WebP for any unrecognized format
 		if err := webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: 90}); err != nil {
 			return nil, fmt.Errorf("encode webp: %w", err)
 		}
+	default:
+		return nil, fmt.Errorf("unsupported raster format: %s", format)
 	}
 
 	return buf.Bytes(), nil
+}
+
+// generateSVG creates an SVG representation of the image
+func generateSVG(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64) ([]byte, error) {
+	var buf bytes.Buffer
+
+	// SVG header
+	buf.WriteString(fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">`, w, h, w, h))
+	buf.WriteString("\n")
+
+	// Check if bgHex contains a gradient (comma-separated colors)
+	color1, color2 := parseGradientColors(bgHex)
+
+	// Calculate radius for rounded shapes (use minimum dimension to ensure circle fits)
+	radius := w
+	if h < w {
+		radius = h
+	}
+	radius = radius / 2
+
+	if color1 != "" && color2 != "" {
+		// Generate unique gradient ID based on colors to avoid conflicts
+		gradientID := fmt.Sprintf("grad_%s_%s", color1, color2)
+
+		// Define linear gradient
+		buf.WriteString(fmt.Sprintf(`<defs><linearGradient id="%s" x1="0%%" y1="0%%" x2="100%%" y2="0%%">`, gradientID))
+		buf.WriteString(fmt.Sprintf(`<stop offset="0%%" style="stop-color:#%s;stop-opacity:1" />`, color1))
+		buf.WriteString(fmt.Sprintf(`<stop offset="100%%" style="stop-color:#%s;stop-opacity:1" />`, color2))
+		buf.WriteString(`</linearGradient></defs>`)
+		buf.WriteString("\n")
+
+		// Background shape with gradient
+		if rounded {
+			buf.WriteString(fmt.Sprintf(`<circle cx="%d" cy="%d" r="%d" fill="url(#%s)" />`, w/2, h/2, radius, gradientID))
+		} else {
+			buf.WriteString(fmt.Sprintf(`<rect width="%d" height="%d" fill="url(#%s)" />`, w, h, gradientID))
+		}
+	} else {
+		// Solid color background
+		if color1 != "" {
+			bgHex = color1
+		}
+		if rounded {
+			buf.WriteString(fmt.Sprintf(`<circle cx="%d" cy="%d" r="%d" fill="#%s" />`, w/2, h/2, radius, bgHex))
+		} else {
+			buf.WriteString(fmt.Sprintf(`<rect width="%d" height="%d" fill="#%s" />`, w, h, bgHex))
+		}
+	}
+	buf.WriteString("\n")
+
+	// Text element
+	// SVG text is positioned by baseline, so we need to adjust.
+	// Use a generic sans-serif family to broadly match the embedded Go fonts (goregular/gobold).
+	// Using dominant-baseline="middle" and text-anchor="middle" for centering.
+	fontWeight := "normal"
+	if bold {
+		fontWeight = "bold"
+	}
+	buf.WriteString(fmt.Sprintf(`<text x="%d" y="%d" font-family="sans-serif" font-size="%.0f" font-weight="%s" fill="#%s" text-anchor="middle" dominant-baseline="middle">%s</text>`,
+		w/2, h/2, fontSize, fontWeight, fgHex, escapeXML(text)))
+	buf.WriteString("\n")
+
+	// Close SVG
+	buf.WriteString("</svg>")
+
+	return buf.Bytes(), nil
+}
+
+// escapeXML escapes special XML characters in text
+func escapeXML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	s = strings.ReplaceAll(s, "'", "&apos;")
+	return s
 }
 
 // ParseHexColor converts #rgb/#rrggbb strings to RGBA.
