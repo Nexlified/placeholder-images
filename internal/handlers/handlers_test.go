@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/golang-lru/v2"
@@ -196,7 +197,7 @@ func TestHomeHandler(t *testing.T) {
 	}
 
 	for _, expected := range expectedStrings {
-		if !contains(body, expected) {
+		if !strings.Contains(body, expected) {
 			t.Errorf("expected body to contain %q", expected)
 		}
 	}
@@ -220,9 +221,4 @@ func TestHomeHandlerNotFound(t *testing.T) {
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("expected 404 got %d", rec.Code)
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
-		(len(s) > 0 && (s[0:len(substr)] == substr || contains(s[1:], substr))))
 }
