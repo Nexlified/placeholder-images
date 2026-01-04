@@ -1,0 +1,82 @@
+# Quotes organized by category
+# Categories: inspirational, motivational, life, success, wisdom, love, happiness, technology
+
+inspirational:
+  - "The only way to do great work is to love what you do. - Steve Jobs"
+  - "Believe you can and you're halfway there. - Theodore Roosevelt"
+  - "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt"
+  - "In the middle of difficulty lies opportunity. - Albert Einstein"
+  - "Do not wait to strike till the iron is hot; but make it hot by striking. - William Butler Yeats"
+  - "The only impossible journey is the one you never begin. - Tony Robbins"
+  - "The best time to plant a tree was 20 years ago. The second best time is now. - Chinese Proverb"
+  - "Everything you've ever wanted is on the other side of fear. - George Addair"
+
+motivational:
+  - "Success is not final, failure is not fatal: it is the courage to continue that counts. - Winston Churchill"
+  - "Don't watch the clock; do what it does. Keep going. - Sam Levenson"
+  - "The only limit to our realization of tomorrow will be our doubts of today. - Franklin D. Roosevelt"
+  - "It does not matter how slowly you go as long as you do not stop. - Confucius"
+  - "You are never too old to set another goal or to dream a new dream. - C.S. Lewis"
+  - "Act as if what you do makes a difference. It does. - William James"
+  - "Start where you are. Use what you have. Do what you can. - Arthur Ashe"
+  - "The secret of getting ahead is getting started. - Mark Twain"
+
+life:
+  - "Life is what happens when you're busy making other plans. - John Lennon"
+  - "The purpose of our lives is to be happy. - Dalai Lama"
+  - "Life is really simple, but we insist on making it complicated. - Confucius"
+  - "In the end, it's not the years in your life that count. It's the life in your years. - Abraham Lincoln"
+  - "Life is a journey, not a destination. - Ralph Waldo Emerson"
+  - "The good life is one inspired by love and guided by knowledge. - Bertrand Russell"
+  - "Life is either a daring adventure or nothing at all. - Helen Keller"
+  - "You only live once, but if you do it right, once is enough. - Mae West"
+
+success:
+  - "Success usually comes to those who are too busy to be looking for it. - Henry David Thoreau"
+  - "The way to get started is to quit talking and begin doing. - Walt Disney"
+  - "I find that the harder I work, the more luck I seem to have. - Thomas Jefferson"
+  - "Success is not the key to happiness. Happiness is the key to success. - Albert Schweitzer"
+  - "Don't be afraid to give up the good to go for the great. - John D. Rockefeller"
+  - "Opportunities don't happen. You create them. - Chris Grosser"
+  - "Success is walking from failure to failure with no loss of enthusiasm. - Winston Churchill"
+  - "The road to success and the road to failure are almost exactly the same. - Colin R. Davis"
+
+wisdom:
+  - "The only true wisdom is in knowing you know nothing. - Socrates"
+  - "Knowledge speaks, but wisdom listens. - Jimi Hendrix"
+  - "The fool doth think he is wise, but the wise man knows himself to be a fool. - William Shakespeare"
+  - "Turn your wounds into wisdom. - Oprah Winfrey"
+  - "The journey of a thousand miles begins with one step. - Lao Tzu"
+  - "Knowing yourself is the beginning of all wisdom. - Aristotle"
+  - "The only way to make sense out of change is to plunge into it, move with it, and join the dance. - Alan Watts"
+  - "It is not that we have a short time to live, but that we waste a lot of it. - Seneca"
+
+love:
+  - "The best thing to hold onto in life is each other. - Audrey Hepburn"
+  - "Love is composed of a single soul inhabiting two bodies. - Aristotle"
+  - "Where there is love there is life. - Mahatma Gandhi"
+  - "Being deeply loved by someone gives you strength, while loving someone deeply gives you courage. - Lao Tzu"
+  - "Love all, trust a few, do wrong to none. - William Shakespeare"
+  - "We are most alive when we're in love. - John Updike"
+  - "The greatest happiness of life is the conviction that we are loved. - Victor Hugo"
+  - "Love is not about how much you say 'I love you', but how much you can prove that it's true. - Unknown"
+
+happiness:
+  - "Happiness is not something ready made. It comes from your own actions. - Dalai Lama"
+  - "For every minute you are angry you lose sixty seconds of happiness. - Ralph Waldo Emerson"
+  - "Happiness is when what you think, what you say, and what you do are in harmony. - Mahatma Gandhi"
+  - "The most important thing is to enjoy your life—to be happy—it's all that matters. - Audrey Hepburn"
+  - "Happiness depends upon ourselves. - Aristotle"
+  - "Don't cry because it's over, smile because it happened. - Dr. Seuss"
+  - "The only way to find true happiness is to risk being completely cut open. - Chuck Palahniuk"
+  - "Count your age by friends, not years. Count your life by smiles, not tears. - John Lennon"
+
+technology:
+  - "Technology is best when it brings people together. - Matt Mullenweg"
+  - "Any sufficiently advanced technology is indistinguishable from magic. - Arthur C. Clarke"
+  - "The advance of technology is based on making it fit in so that you don't really even notice it. - Bill Gates"
+  - "It has become appallingly obvious that our technology has exceeded our humanity. - Albert Einstein"
+  - "The great growling engine of change - technology. - Alvin Toffler"
+  - "We are stuck with technology when what we really want is just stuff that works. - Douglas Adams"
+  - "Technology is nothing. What's important is that you have a faith in people. - Steve Jobs"
+  - "The human spirit must prevail over technology. - Albert Einstein"

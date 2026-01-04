@@ -1,0 +1,82 @@
+# Jokes organized by category
+# Categories: programming, science, dad, puns, technology, work, animals, general
+
+programming:
+  - "Why do programmers prefer dark mode? Because light attracts bugs!"
+  - "How many programmers does it take to change a light bulb? None, that's a hardware problem."
+  - "Why do Java developers wear glasses? Because they can't C#."
+  - "A SQL query walks into a bar, walks up to two tables and asks... Can I join you?"
+  - "There are 10 types of people in the world: those who understand binary and those who don't."
+  - "Why did the programmer quit his job? Because he didn't get arrays."
+  - "What's a programmer's favorite place to hang out? Foo Bar."
+  - "Why do programmers always mix up Halloween and Christmas? Because Oct 31 == Dec 25."
+
+science:
+  - "What did the thermometer say to the graduated cylinder? You may have graduated, but I got more degrees!"
+  - "Why can't you trust an atom? Because they make up everything!"
+  - "What do you call an educated tube? A graduated cylinder."
+  - "I'm reading a book about anti-gravity. It's impossible to put down!"
+  - "Did you hear oxygen went on a date with potassium? It went OK."
+  - "What did one DNA strand say to the other? Do these genes make me look fat?"
+  - "Why are chemists excellent for solving problems? They have all the solutions."
+  - "What do you call a fish made of two sodium atoms? 2 Na."
+
+dad:
+  - "I'm afraid for the calendar. Its days are numbered."
+  - "What do you call a fake noodle? An impasta."
+  - "What did the ocean say to the beach? Nothing, it just waved."
+  - "Why don't scientists trust atoms? Because they make up everything!"
+  - "I used to hate facial hair, but then it grew on me."
+  - "Did you hear about the restaurant on the moon? Great food, no atmosphere."
+  - "What do you call cheese that isn't yours? Nacho cheese!"
+  - "Why don't eggs tell jokes? They'd crack each other up."
+
+puns:
+  - "I used to be a banker, but I lost interest."
+  - "Time flies like an arrow. Fruit flies like a banana."
+  - "I stayed up all night wondering where the sun went. Then it dawned on me."
+  - "I'm on a seafood diet. I see food and I eat it."
+  - "Did you hear about the claustrophobic astronaut? He just needed a little space."
+  - "What do you call a bear with no teeth? A gummy bear!"
+  - "Why did the scarecrow win an award? He was outstanding in his field."
+  - "I tried to catch some fog yesterday. Mist."
+
+technology:
+  - "Why was the computer cold? It left its Windows open!"
+  - "What do you call a computer floating in the ocean? A Dell rolling in the deep."
+  - "Why did the smartphone need glasses? It lost all its contacts."
+  - "What's the object-oriented way to become wealthy? Inheritance."
+  - "Why did the PowerPoint presentation cross the road? To get to the other slide!"
+  - "How does a computer get drunk? It takes screenshots."
+  - "Why don't robots ever panic? They have nerves of steel."
+  - "What do you get when you cross a computer with an elephant? Lots of memory!"
+
+work:
+  - "I told my boss three companies were after me and I needed a raise. He asked which companies. I said gas, electric, and cable."
+  - "Why don't oysters donate to charity? Because they're shellfish."
+  - "I'm great at multitasking. I can waste time, be unproductive, and procrastinate all at once."
+  - "The problem with troubleshooting is that trouble shoots back."
+  - "Why did the employee get fired from the calendar factory? He took a day off."
+  - "My job is secure. No one else wants it."
+  - "I always give 100% at work: 13% Monday, 22% Tuesday, 26% Wednesday, 35% Thursday, 4% Friday."
+  - "The best way to appreciate your job is to imagine yourself without one."
+
+animals:
+  - "What do you call an alligator in a vest? An investigator."
+  - "Why don't elephants use computers? They're afraid of the mouse."
+  - "What do you call a sleeping bull? A bulldozer."
+  - "Why don't cats play poker in the jungle? Too many cheetahs."
+  - "What's orange and sounds like a parrot? A carrot."
+  - "Why do cows have hooves instead of feet? Because they lactose."
+  - "What do you call a fish with no eyes? Fsh."
+  - "Why did the chicken go to the séance? To get to the other side."
+
+general:
+  - "What do you call a boomerang that won't come back? A stick."
+  - "Why don't skeletons fight each other? They don't have the guts."
+  - "What did one wall say to the other wall? I'll meet you at the corner!"
+  - "Why couldn't the bicycle stand up by itself? It was two tired."
+  - "What do you call a magic dog? A labracadabrador."
+  - "Why did the math book look so sad? Because it had too many problems."
+  - "What starts with E, ends with E, and has only 1 letter in it? An Envelope."
+  - "Why are ghosts bad liars? Because you can see right through them!"
