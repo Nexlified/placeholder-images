@@ -105,6 +105,7 @@ If generation fails (for example due to invalid parameters), the server responds
 
 - `ADDR` env var or `-addr` flag controls the HTTP bind address (default `:8080`).
 - `CACHE_SIZE` env var or `-cache-size` flag sets LRU entry count (default `2000`).
+- `DOMAIN` env var or `-domain` flag sets the public domain for example URLs in the home page (default `localhost:8080`).
 
 ### Docker Configuration
 
@@ -114,6 +115,7 @@ When using Docker Compose, you can override environment variables in `docker-com
 environment:
   ADDR: ":3000"
   CACHE_SIZE: "5000"
+  DOMAIN: "grout.example.com"
 ```
 
 ## Building from Source
@@ -133,7 +135,7 @@ docker build -t grout .
 ### Run Docker container
 
 ```bash
-docker run -p 8080:8080 -e ADDR=":8080" grout
+docker run -p 8080:8080 -e ADDR=":8080" -e DOMAIN="grout.example.com" grout
 ```
 
 ## CI/CD
