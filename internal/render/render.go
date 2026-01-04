@@ -170,10 +170,18 @@ func generateSVG(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSi
 
 	// Check if bgHex contains a gradient (comma-separated colors)
 	color1, color2 := parseGradientColors(bgHex)
+	
+	// Calculate radius for rounded shapes (use minimum dimension to ensure circle fits)
+	radius := w
+	if h < w {
+		radius = h
+	}
+	radius = radius / 2
+	
 	if color1 != "" && color2 != "" {
 		// Generate unique gradient ID based on colors to avoid conflicts
 		gradientID := fmt.Sprintf("grad_%s_%s", color1, color2)
-		
+
 		// Define linear gradient
 		buf.WriteString(fmt.Sprintf(`<defs><linearGradient id="%s" x1="0%%" y1="0%%" x2="100%%" y2="0%%">`, gradientID))
 		buf.WriteString(fmt.Sprintf(`<stop offset="0%%" style="stop-color:#%s;stop-opacity:1" />`, color1))
@@ -183,7 +191,7 @@ func generateSVG(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSi
 
 		// Background shape with gradient
 		if rounded {
-			buf.WriteString(fmt.Sprintf(`<circle cx="%d" cy="%d" r="%d" fill="url(#%s)" />`, w/2, h/2, w/2, gradientID))
+			buf.WriteString(fmt.Sprintf(`<circle cx="%d" cy="%d" r="%d" fill="url(#%s)" />`, w/2, h/2, radius, gradientID))
 		} else {
 			buf.WriteString(fmt.Sprintf(`<rect width="%d" height="%d" fill="url(#%s)" />`, w, h, gradientID))
 		}
@@ -193,7 +201,7 @@ func generateSVG(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSi
 			bgHex = color1
 		}
 		if rounded {
-			buf.WriteString(fmt.Sprintf(`<circle cx="%d" cy="%d" r="%d" fill="#%s" />`, w/2, h/2, w/2, bgHex))
+			buf.WriteString(fmt.Sprintf(`<circle cx="%d" cy="%d" r="%d" fill="#%s" />`, w/2, h/2, radius, bgHex))
 		} else {
 			buf.WriteString(fmt.Sprintf(`<rect width="%d" height="%d" fill="#%s" />`, w, h, bgHex))
 		}
