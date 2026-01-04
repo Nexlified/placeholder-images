@@ -146,9 +146,9 @@ func (s *Service) handlePlaceholder(w http.ResponseWriter, r *http.Request) {
 	quoteParam := r.URL.Query().Get("quote")
 	jokeParam := r.URL.Query().Get("joke")
 	category := r.URL.Query().Get("category")
-	
+
 	text := r.URL.Query().Get("text")
-	
+
 	// Priority: quote > joke > text > default
 	if quoteParam == "true" || quoteParam == "1" {
 		if s.contentManager != nil {
