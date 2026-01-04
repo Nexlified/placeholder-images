@@ -76,6 +76,26 @@ func (r *Renderer) DrawImage(w, h int, bgHex, fgHex, text string, rounded, bold 
 
 // DrawImageWithFormat renders an image in the specified format with provided options.
 func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, rounded, bold bool, format ImageFormat) ([]byte, error) {
+	// Calculate font size for consistent rendering across formats
+	minDim := float64(w)
+	if float64(h) < minDim {
+		minDim = float64(h)
+	}
+
+	fontSize := minDim * 0.5
+	if len(text) > 2 {
+		fontSize = minDim * 0.15
+		if fontSize < 12 {
+			fontSize = 12
+		}
+	}
+
+	// For SVG format, generate directly without rasterization
+	if format == FormatSVG {
+		return generateSVG(w, h, bgHex, fgHex, text, rounded, bold, fontSize)
+	}
+
+	// For raster formats, create the image using gg
 	dc := gg.NewContext(w, h)
 
 	// Check if bgHex contains a gradient (comma-separated colors)
@@ -104,19 +124,6 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 		dc.Fill()
 	}
 
-	minDim := float64(w)
-	if float64(h) < minDim {
-		minDim = float64(h)
-	}
-
-	fontSize := minDim * 0.5
-	if len(text) > 2 {
-		fontSize = minDim * 0.15
-		if fontSize < 12 {
-			fontSize = 12
-		}
-	}
-
 	font := r.regular
 	if bold {
 		font = r.bold
@@ -125,17 +132,14 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 	dc.SetColor(fg)
 	dc.DrawStringAnchored(text, float64(w)/2, float64(h)/2, 0.5, 0.5)
 
-	return encodeImage(dc.Image(), format, w, h, bgHex, fgHex, text, rounded, bold, font, fontSize)
+	return encodeImage(dc.Image(), format)
 }
 
-// encodeImage encodes the image in the specified format
-func encodeImage(img image.Image, format ImageFormat, w, h int, bgHex, fgHex, text string, rounded, bold bool, font *truetype.Font, fontSize float64) ([]byte, error) {
+// encodeImage encodes a rasterized image in the specified format (PNG, JPEG, GIF, WebP)
+func encodeImage(img image.Image, format ImageFormat) ([]byte, error) {
 	var buf bytes.Buffer
 
 	switch format {
-	case FormatSVG:
-		// Generate SVG directly without rasterizing
-		return generateSVG(w, h, bgHex, fgHex, text, rounded, bold, fontSize)
 	case FormatPNG:
 		if err := png.Encode(&buf, img); err != nil {
 			return nil, fmt.Errorf("encode png: %w", err)
