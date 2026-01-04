@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -30,6 +31,7 @@ func NewService(renderer *render.Renderer, cache *lru.Cache[string, []byte], cfg
 func (s *Service) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/avatar/", s.handleAvatar)
 	mux.HandleFunc("/placeholder/", s.handlePlaceholder)
+	mux.HandleFunc("GET /health", s.HandleHealth)
 }
 
 var placeholderRegex = regexp.MustCompile(`^(\d+)x(\d+)$`)
@@ -171,4 +173,13 @@ func (s *Service) serveImage(w http.ResponseWriter, r *http.Request, cacheKey st
 	s.cache.Add(cacheKey, imgData)
 	w.Header().Set("X-Cache", "MISS")
 	_, _ = w.Write(imgData)
+}
+
+func (s *Service) HandleHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "healthy",
+		"version": "1.0.0",
+	})
 }
