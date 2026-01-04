@@ -153,12 +153,11 @@ func encodeImage(img image.Image, format ImageFormat) ([]byte, error) {
 			return nil, fmt.Errorf("encode gif: %w", err)
 		}
 	case FormatWebP:
-		fallthrough
-	default:
-		// Default to WebP for any unrecognized format
 		if err := webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: 90}); err != nil {
 			return nil, fmt.Errorf("encode webp: %w", err)
 		}
+	default:
+		return nil, fmt.Errorf("unsupported raster format: %s", format)
 	}
 
 	return buf.Bytes(), nil
