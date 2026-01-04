@@ -7,9 +7,9 @@ import (
 
 	"github.com/hashicorp/golang-lru/v2"
 
-	"go-avatars/internal/config"
-	"go-avatars/internal/handlers"
-	"go-avatars/internal/render"
+	"grout/internal/config"
+	"grout/internal/handlers"
+	"grout/internal/render"
 )
 
 func main() {

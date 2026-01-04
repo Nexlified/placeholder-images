@@ -18,7 +18,7 @@ go run ./cmd/grout
 
 ### Using pre-built binaries
 
-Download the latest release for your platform from the [Releases page](https://github.com/your-username/go-avatars/releases) and run:
+Download the latest release for your platform from the [Releases page](https://github.com/your-username/grout/releases) and run:
 
 ```bash
 # Linux/macOS

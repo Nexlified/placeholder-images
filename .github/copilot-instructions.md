@@ -11,7 +11,7 @@ Grout is a high-performance HTTP service written in Go that generates PNG images
 
 ### Project Structure
 ```
-go-avatars/
+grout/
 ├── cmd/grout/          # Application entry point
 │   └── main.go            # Server initialization and routing setup
 ├── internal/
