@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2"
 
 	"grout/internal/config"
+	"grout/internal/content"
 	"grout/internal/render"
 	"grout/internal/utils"
 )
@@ -24,14 +25,20 @@ var faviconData []byte
 
 // Service bundles dependencies required by HTTP handlers.
 type Service struct {
-	renderer *render.Renderer
-	cache    *lru.Cache[string, []byte]
-	cfg      config.ServerConfig
+	renderer       *render.Renderer
+	cache          *lru.Cache[string, []byte]
+	cfg            config.ServerConfig
+	contentManager *content.Manager
 }
 
 // NewService wires the handler dependencies.
 func NewService(renderer *render.Renderer, cache *lru.Cache[string, []byte], cfg config.ServerConfig) *Service {
-	return &Service{renderer: renderer, cache: cache, cfg: cfg}
+	contentManager, err := content.NewManager()
+	if err != nil {
+		// Log error but don't fail - quotes/jokes will just be unavailable
+		contentManager = nil
+	}
+	return &Service{renderer: renderer, cache: cache, cfg: cfg, contentManager: contentManager}
 }
 
 // RegisterRoutes attaches handlers to the provided mux.
@@ -135,8 +142,39 @@ func (s *Service) handlePlaceholder(w http.ResponseWriter, r *http.Request) {
 		height = utils.ParseIntOrDefault(r.URL.Query().Get("h"), config.DefaultSize)
 	}
 
+	// Check for quote or joke parameter
+	quoteParam := r.URL.Query().Get("quote")
+	jokeParam := r.URL.Query().Get("joke")
+	category := r.URL.Query().Get("category")
+	
 	text := r.URL.Query().Get("text")
-	if text == "" {
+	
+	// Priority: quote > joke > text > default
+	if quoteParam == "true" || quoteParam == "1" {
+		if s.contentManager != nil {
+			randomQuote, err := s.contentManager.GetRandom(content.ContentTypeQuote, category)
+			if err == nil {
+				text = randomQuote
+			} else {
+				// If error (e.g., invalid category), fall back to text or default
+				if text == "" {
+					text = fmt.Sprintf("%d x %d", width, height)
+				}
+			}
+		}
+	} else if jokeParam == "true" || jokeParam == "1" {
+		if s.contentManager != nil {
+			randomJoke, err := s.contentManager.GetRandom(content.ContentTypeJoke, category)
+			if err == nil {
+				text = randomJoke
+			} else {
+				// If error (e.g., invalid category), fall back to text or default
+				if text == "" {
+					text = fmt.Sprintf("%d x %d", width, height)
+				}
+			}
+		}
+	} else if text == "" {
 		text = fmt.Sprintf("%d x %d", width, height)
 	}
 

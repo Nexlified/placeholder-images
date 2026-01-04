@@ -66,8 +66,33 @@ Creates a rectangular placeholder image with custom dimensions and optional over
 - **Format**: Images are served as WebP by default when no extension is specified. Use `.png`, `.jpg`, `.jpeg`, `.gif`, or `.webp` extension to request a specific format.
 - **Dimensions**: Can also use query parameters `w` and `h` (default `128`).
 - **Text**: `text` query parameter (defaults to "{width} x {height}").
+- **Quote**: `quote=true` query parameter to use a random quote instead of custom text.
+- **Joke**: `joke=true` query parameter to use a random joke instead of custom text.
+- **Category**: `category` query parameter to filter quotes/jokes by category (optional).
 - **Background Color**: `bg` query parameter (hex, default `cccccc`). Supports gradients with comma-separated colors (e.g., `ff0000,0000ff` for red to blue).
 - **Text Color**: `color` query parameter (hex, default auto-contrasted).
+
+### Quote Categories
+
+- `inspirational` - Inspirational quotes to motivate and uplift
+- `motivational` - Motivational quotes for taking action
+- `life` - Quotes about life and living
+- `success` - Quotes about achieving success
+- `wisdom` - Wise sayings and philosophical thoughts
+- `love` - Quotes about love and relationships
+- `happiness` - Quotes about finding joy and happiness
+- `technology` - Quotes about technology and innovation
+
+### Joke Categories
+
+- `programming` - Developer and programming jokes
+- `science` - Scientific and chemistry jokes
+- `dad` - Classic dad jokes
+- `puns` - Wordplay and puns
+- `technology` - Technology and computer jokes
+- `work` - Work and office humor
+- `animals` - Animal-related jokes
+- `general` - General purpose jokes
 
 Examples:
 
@@ -89,6 +114,18 @@ curl "http://localhost:8080/placeholder/800x400.png?bg=ff0000,0000ff&text=Gradie
 
 # Gradient background (green to yellow)
 curl "http://localhost:8080/placeholder/1200x600?bg=00ff00,ffff00"
+
+# Random quote (any category)
+curl "http://localhost:8080/placeholder/1200x400?quote=true"
+
+# Random inspirational quote
+curl "http://localhost:8080/placeholder/1200x400?quote=true&category=inspirational"
+
+# Random programming joke
+curl "http://localhost:8080/placeholder/800x600.png?joke=true&category=programming"
+
+# Random joke with custom colors
+curl "http://localhost:8080/placeholder/1000x500?joke=true&bg=2c3e50&color=ecf0f1"
 ```
 
 ## Response Characteristics

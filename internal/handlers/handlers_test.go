@@ -252,3 +252,99 @@ func TestFaviconHandler(t *testing.T) {
 		t.Fatalf("expected Cache-Control header with max-age, got %s", cc)
 	}
 }
+
+func TestPlaceholderHandlerWithQuote(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
+	svc.RegisterRoutes(mux)
+
+	tests := []struct {
+		name string
+		path string
+	}{
+		{"Quote without category", "/placeholder/800x400?quote=true"},
+		{"Quote with category", "/placeholder/800x400?quote=true&category=inspirational"},
+		{"Quote with PNG format", "/placeholder/800x400.png?quote=true"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			mux.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected 200 got %d", rec.Code)
+			}
+			if rec.Body.Len() == 0 {
+				t.Fatal("expected body to contain image data")
+			}
+		})
+	}
+}
+
+func TestPlaceholderHandlerWithJoke(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
+	svc.RegisterRoutes(mux)
+
+	tests := []struct {
+		name string
+		path string
+	}{
+		{"Joke without category", "/placeholder/800x400?joke=true"},
+		{"Joke with category", "/placeholder/800x400?joke=true&category=programming"},
+		{"Joke with PNG format", "/placeholder/800x400.png?joke=true"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			mux.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected 200 got %d", rec.Code)
+			}
+			if rec.Body.Len() == 0 {
+				t.Fatal("expected body to contain image data")
+			}
+		})
+	}
+}
+
+func TestPlaceholderHandlerWithInvalidCategory(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
+	svc.RegisterRoutes(mux)
+
+	// With invalid category, should fall back to default dimensions text
+	req := httptest.NewRequest(http.MethodGet, "/placeholder/800x400?quote=true&category=nonexistent", nil)
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 got %d", rec.Code)
+	}
+	if rec.Body.Len() == 0 {
+		t.Fatal("expected body to contain image data")
+	}
+}
