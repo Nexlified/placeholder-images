@@ -15,6 +15,9 @@ const (
 	DefaultAddr      = ":8080"
 	DefaultDomain    = "localhost:8080"
 	CacheSize        = 2000
+	MinWidthForQuoteJoke = 300  // Minimum width required to render quotes/jokes
+	MinFontSize      = 16       // Minimum font size for readability
+	MaxFontSize      = 48       // Maximum font size to avoid huge text
 )
 
 // ServerConfig represents runtime server settings.

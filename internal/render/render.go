@@ -17,6 +17,8 @@ import (
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/goregular"
+
+	"grout/internal/config"
 )
 
 // Renderer is responsible for drawing avatars and placeholders.
@@ -74,6 +76,56 @@ func (r *Renderer) DrawImage(w, h int, bgHex, fgHex, text string, rounded, bold 
 	return r.DrawImageWithFormat(w, h, bgHex, fgHex, text, rounded, bold, FormatSVG)
 }
 
+// DrawPlaceholderImage renders a placeholder image with optimized font sizing for quotes/jokes
+func (r *Renderer) DrawPlaceholderImage(w, h int, bgHex, fgHex, text string, isQuoteOrJoke bool, format ImageFormat) ([]byte, error) {
+	// Calculate font size based on whether it's a quote/joke or regular placeholder
+	var fontSize float64
+	
+	if isQuoteOrJoke {
+		// For quotes/jokes, use dynamic sizing based on text length and image dimensions
+		// Start with a base size relative to height
+		fontSize = float64(h) * 0.08
+		
+		// Adjust based on text length
+		textLen := len(text)
+		if textLen > 200 {
+			fontSize = float64(h) * 0.05
+		} else if textLen > 100 {
+			fontSize = float64(h) * 0.06
+		}
+		
+		// Apply min/max bounds from config
+		if fontSize < config.MinFontSize {
+			fontSize = config.MinFontSize
+		}
+		if fontSize > config.MaxFontSize {
+			fontSize = config.MaxFontSize
+		}
+	} else {
+		// For regular placeholders (dimensions text, initials), use existing logic
+		minDim := float64(w)
+		if float64(h) < minDim {
+			minDim = float64(h)
+		}
+
+		fontSize = minDim * 0.5
+		if len(text) > 2 {
+			fontSize = minDim * 0.15
+			if fontSize < 12 {
+				fontSize = 12
+			}
+		}
+	}
+
+	// For SVG format, generate directly without rasterization
+	if format == FormatSVG {
+		return r.generateSVGWithWrapping(w, h, bgHex, fgHex, text, false, true, fontSize)
+	}
+
+	// For raster formats, create the image using gg
+	return r.drawRasterImageWithWrapping(w, h, bgHex, fgHex, text, false, true, fontSize, format)
+}
+
 // DrawImageWithFormat renders an image in the specified format with provided options.
 func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, rounded, bold bool, format ImageFormat) ([]byte, error) {
 	// Calculate font size for consistent rendering across formats
@@ -92,10 +144,15 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 
 	// For SVG format, generate directly without rasterization
 	if format == FormatSVG {
-		return generateSVG(w, h, bgHex, fgHex, text, rounded, bold, fontSize)
+		return r.generateSVGWithWrapping(w, h, bgHex, fgHex, text, rounded, bold, fontSize)
 	}
 
 	// For raster formats, create the image using gg
+	return r.drawRasterImageWithWrapping(w, h, bgHex, fgHex, text, rounded, bold, fontSize, format)
+}
+
+// drawRasterImageWithWrapping renders a raster image with text wrapping support
+func (r *Renderer) drawRasterImageWithWrapping(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64, format ImageFormat) ([]byte, error) {
 	dc := gg.NewContext(w, h)
 
 	// Check if bgHex contains a gradient (comma-separated colors)
@@ -130,9 +187,84 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 	}
 	dc.SetFontFace(truetype.NewFace(font, &truetype.Options{Size: fontSize}))
 	dc.SetColor(fg)
-	dc.DrawStringAnchored(text, float64(w)/2, float64(h)/2, 0.5, 0.5)
+
+	// Wrap text if it's long enough (more than 2 characters = likely a quote/joke)
+	if len(text) > 2 {
+		lines := r.wrapText(dc, text, float64(w), fontSize)
+		drawMultiLineText(dc, lines, float64(w), float64(h), fontSize)
+	} else {
+		// For initials/short text, draw as before
+		dc.DrawStringAnchored(text, float64(w)/2, float64(h)/2, 0.5, 0.5)
+	}
 
 	return encodeImage(dc.Image(), format)
+}
+
+// wrapText breaks text into lines that fit within the given width with padding
+func (r *Renderer) wrapText(dc *gg.Context, text string, imageWidth, fontSize float64) []string {
+	// Calculate available width with padding (10% on each side = 80% usable)
+	padding := imageWidth * 0.1
+	maxWidth := imageWidth - (2 * padding)
+	
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return []string{text}
+	}
+	
+	var lines []string
+	var currentLine string
+	
+	for i, word := range words {
+		testLine := currentLine
+		if testLine != "" {
+			testLine += " " + word
+		} else {
+			testLine = word
+		}
+		
+		// Measure the width of the test line
+		width, _ := dc.MeasureString(testLine)
+		
+		if width <= maxWidth {
+			currentLine = testLine
+		} else {
+			// Line is too long, save current line and start new one
+			if currentLine != "" {
+				lines = append(lines, currentLine)
+				currentLine = word
+			} else {
+				// Single word is too long, add it anyway
+				lines = append(lines, word)
+				currentLine = ""
+			}
+		}
+		
+		// Add the last line
+		if i == len(words)-1 && currentLine != "" {
+			lines = append(lines, currentLine)
+		}
+	}
+	
+	if len(lines) == 0 {
+		return []string{text}
+	}
+	
+	return lines
+}
+
+// drawMultiLineText draws multiple lines of text centered on the image
+func drawMultiLineText(dc *gg.Context, lines []string, width, height, fontSize float64) {
+	lineHeight := fontSize * 1.5 // 1.5x line spacing for readability
+	totalHeight := float64(len(lines)) * lineHeight
+	
+	// Calculate starting Y position to center the text block vertically
+	startY := (height - totalHeight) / 2 + lineHeight/2
+	
+	// Draw each line centered horizontally
+	for i, line := range lines {
+		y := startY + float64(i)*lineHeight
+		dc.DrawStringAnchored(line, width/2, y, 0.5, 0.5)
+	}
 }
 
 // encodeImage encodes a rasterized image in the specified format (PNG, JPEG, GIF, WebP)
@@ -163,7 +295,140 @@ func encodeImage(img image.Image, format ImageFormat) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// generateSVG creates an SVG representation of the image
+// generateSVGWithWrapping creates an SVG representation with text wrapping support
+func (r *Renderer) generateSVGWithWrapping(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64) ([]byte, error) {
+	var buf bytes.Buffer
+
+	// SVG header
+	buf.WriteString(fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">`, w, h, w, h))
+	buf.WriteString("\n")
+
+	// Check if bgHex contains a gradient (comma-separated colors)
+	color1, color2 := parseGradientColors(bgHex)
+
+	// Calculate radius for rounded shapes (use minimum dimension to ensure circle fits)
+	radius := w
+	if h < w {
+		radius = h
+	}
+	radius = radius / 2
+
+	if color1 != "" && color2 != "" {
+		// Generate unique gradient ID based on colors to avoid conflicts
+		gradientID := fmt.Sprintf("grad_%s_%s", color1, color2)
+
+		// Define linear gradient
+		buf.WriteString(fmt.Sprintf(`<defs><linearGradient id="%s" x1="0%%" y1="0%%" x2="100%%" y2="0%%">`, gradientID))
+		buf.WriteString(fmt.Sprintf(`<stop offset="0%%" style="stop-color:#%s;stop-opacity:1" />`, color1))
+		buf.WriteString(fmt.Sprintf(`<stop offset="100%%" style="stop-color:#%s;stop-opacity:1" />`, color2))
+		buf.WriteString(`</linearGradient></defs>`)
+		buf.WriteString("\n")
+
+		// Background shape with gradient
+		if rounded {
+			buf.WriteString(fmt.Sprintf(`<circle cx="%d" cy="%d" r="%d" fill="url(#%s)" />`, w/2, h/2, radius, gradientID))
+		} else {
+			buf.WriteString(fmt.Sprintf(`<rect width="%d" height="%d" fill="url(#%s)" />`, w, h, gradientID))
+		}
+	} else {
+		// Solid color background
+		if color1 != "" {
+			bgHex = color1
+		}
+		if rounded {
+			buf.WriteString(fmt.Sprintf(`<circle cx="%d" cy="%d" r="%d" fill="#%s" />`, w/2, h/2, radius, bgHex))
+		} else {
+			buf.WriteString(fmt.Sprintf(`<rect width="%d" height="%d" fill="#%s" />`, w, h, bgHex))
+		}
+	}
+	buf.WriteString("\n")
+
+	// Text element(s)
+	fontWeight := "normal"
+	if bold {
+		fontWeight = "bold"
+	}
+
+	// For long text, wrap it
+	if len(text) > 2 {
+		lines := wrapTextForSVG(text, float64(w), fontSize)
+		lineHeight := fontSize * 1.5
+		totalHeight := float64(len(lines)) * lineHeight
+		startY := (float64(h) - totalHeight) / 2 + lineHeight/2
+
+		for i, line := range lines {
+			y := startY + float64(i)*lineHeight
+			buf.WriteString(fmt.Sprintf(`<text x="%d" y="%.0f" font-family="sans-serif" font-size="%.0f" font-weight="%s" fill="#%s" text-anchor="middle" dominant-baseline="middle">%s</text>`,
+				w/2, y, fontSize, fontWeight, fgHex, escapeXML(line)))
+			buf.WriteString("\n")
+		}
+	} else {
+		// For initials/short text, draw as before
+		buf.WriteString(fmt.Sprintf(`<text x="%d" y="%d" font-family="sans-serif" font-size="%.0f" font-weight="%s" fill="#%s" text-anchor="middle" dominant-baseline="middle">%s</text>`,
+			w/2, h/2, fontSize, fontWeight, fgHex, escapeXML(text)))
+		buf.WriteString("\n")
+	}
+
+	// Close SVG
+	buf.WriteString("</svg>")
+
+	return buf.Bytes(), nil
+}
+
+// wrapTextForSVG breaks text into lines for SVG rendering (simpler version without measuring)
+func wrapTextForSVG(text string, imageWidth, fontSize float64) []string {
+	// Estimate character width as roughly 0.6 * fontSize
+	charWidth := fontSize * 0.6
+	padding := imageWidth * 0.1
+	maxWidth := imageWidth - (2 * padding)
+	maxCharsPerLine := int(maxWidth / charWidth)
+	
+	if maxCharsPerLine < 10 {
+		maxCharsPerLine = 10
+	}
+	
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return []string{text}
+	}
+	
+	var lines []string
+	var currentLine string
+	
+	for _, word := range words {
+		testLine := currentLine
+		if testLine != "" {
+			testLine += " " + word
+		} else {
+			testLine = word
+		}
+		
+		if len(testLine) <= maxCharsPerLine {
+			currentLine = testLine
+		} else {
+			if currentLine != "" {
+				lines = append(lines, currentLine)
+				currentLine = word
+			} else {
+				// Single word is too long, add it anyway
+				lines = append(lines, word)
+				currentLine = ""
+			}
+		}
+	}
+	
+	if currentLine != "" {
+		lines = append(lines, currentLine)
+	}
+	
+	if len(lines) == 0 {
+		return []string{text}
+	}
+	
+	return lines
+}
+
+// generateSVG creates an SVG representation of the image (legacy, kept for compatibility)
 func generateSVG(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64) ([]byte, error) {
 	var buf bytes.Buffer
 

@@ -145,3 +145,71 @@ func TestDrawImageWithSVGBold(t *testing.T) {
 		t.Fatalf("expected bold font-weight, got: %s", boldStr)
 	}
 }
+
+func TestDrawPlaceholderImageWithQuote(t *testing.T) {
+	r, err := New()
+	if err != nil {
+		t.Fatalf("failed to create renderer: %v", err)
+	}
+
+	tests := []struct {
+		name           string
+		width          int
+		height         int
+		text           string
+		isQuoteOrJoke  bool
+		format         ImageFormat
+	}{
+		{"Short quote PNG", 800, 400, "The only way to do great work is to love what you do.", true, FormatPNG},
+		{"Long quote PNG", 1000, 600, "Success is not final, failure is not fatal: It is the courage to continue that counts. Success is not final, failure is not fatal.", true, FormatPNG},
+		{"Regular text", 400, 300, "400 x 300", false, FormatPNG},
+		{"Short quote SVG", 800, 400, "Be yourself; everyone else is already taken.", true, FormatSVG},
+		{"Long quote SVG", 1200, 500, "In three words I can sum up everything I've learned about life: it goes on. And on and on.", true, FormatSVG},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := r.DrawPlaceholderImage(tt.width, tt.height, "2c3e50", "ecf0f1", tt.text, tt.isQuoteOrJoke, tt.format)
+			if err != nil {
+				t.Fatalf("failed to draw placeholder: %v", err)
+			}
+			if len(data) == 0 {
+				t.Fatal("expected image data, got empty")
+			}
+		})
+	}
+}
+
+func TestWrapTextForSVG(t *testing.T) {
+	tests := []struct {
+		name       string
+		text       string
+		width      float64
+		fontSize   float64
+		minLines   int
+		maxLines   int
+	}{
+		{"Short text", "Hello World", 800, 24, 1, 1},
+		{"Long text wraps", "The only way to do great work is to love what you do. Stay hungry, stay foolish.", 600, 24, 2, 5},
+		{"Very long text", "Success is not final, failure is not fatal: It is the courage to continue that counts. Success is not final, failure is not fatal: It is the courage to continue that counts.", 800, 20, 3, 8},
+		{"Small width forces wrapping", "This is a test of text wrapping", 300, 18, 2, 5},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lines := wrapTextForSVG(tt.text, tt.width, tt.fontSize)
+			if len(lines) < tt.minLines {
+				t.Errorf("expected at least %d lines, got %d", tt.minLines, len(lines))
+			}
+			if len(lines) > tt.maxLines {
+				t.Errorf("expected at most %d lines, got %d", tt.maxLines, len(lines))
+			}
+			// Verify all lines are non-empty
+			for i, line := range lines {
+				if strings.TrimSpace(line) == "" {
+					t.Errorf("line %d is empty", i)
+				}
+			}
+		})
+	}
+}
