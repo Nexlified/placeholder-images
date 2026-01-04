@@ -109,7 +109,7 @@ func (r *Renderer) DrawPlaceholderImage(w, h int, bgHex, fgHex, text string, isQ
 		}
 
 		fontSize = minDim * 0.5
-		if len(text) > 2 {
+		if len(text) > config.MinTextLengthForWrapping {
 			fontSize = minDim * 0.15
 			if fontSize < 12 {
 				fontSize = 12
@@ -119,11 +119,11 @@ func (r *Renderer) DrawPlaceholderImage(w, h int, bgHex, fgHex, text string, isQ
 
 	// For SVG format, generate directly without rasterization
 	if format == FormatSVG {
-		return r.generateSVGWithWrapping(w, h, bgHex, fgHex, text, false, true, fontSize)
+		return r.generateSVGWithWrapping(w, h, bgHex, fgHex, text, false, true, fontSize, isQuoteOrJoke)
 	}
 
 	// For raster formats, create the image using gg
-	return r.drawRasterImageWithWrapping(w, h, bgHex, fgHex, text, false, true, fontSize, format)
+	return r.drawRasterImageWithWrapping(w, h, bgHex, fgHex, text, false, true, fontSize, isQuoteOrJoke, format)
 }
 
 // DrawImageWithFormat renders an image in the specified format with provided options.
@@ -135,7 +135,7 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 	}
 
 	fontSize := minDim * 0.5
-	if len(text) > 2 {
+	if len(text) > config.MinTextLengthForWrapping {
 		fontSize = minDim * 0.15
 		if fontSize < 12 {
 			fontSize = 12
@@ -144,15 +144,15 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 
 	// For SVG format, generate directly without rasterization
 	if format == FormatSVG {
-		return r.generateSVGWithWrapping(w, h, bgHex, fgHex, text, rounded, bold, fontSize)
+		return r.generateSVGWithWrapping(w, h, bgHex, fgHex, text, rounded, bold, fontSize, false)
 	}
 
 	// For raster formats, create the image using gg
-	return r.drawRasterImageWithWrapping(w, h, bgHex, fgHex, text, rounded, bold, fontSize, format)
+	return r.drawRasterImageWithWrapping(w, h, bgHex, fgHex, text, rounded, bold, fontSize, false, format)
 }
 
 // drawRasterImageWithWrapping renders a raster image with text wrapping support
-func (r *Renderer) drawRasterImageWithWrapping(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64, format ImageFormat) ([]byte, error) {
+func (r *Renderer) drawRasterImageWithWrapping(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64, isQuoteOrJoke bool, format ImageFormat) ([]byte, error) {
 	dc := gg.NewContext(w, h)
 
 	// Check if bgHex contains a gradient (comma-separated colors)
@@ -188,12 +188,13 @@ func (r *Renderer) drawRasterImageWithWrapping(w, h int, bgHex, fgHex, text stri
 	dc.SetFontFace(truetype.NewFace(font, &truetype.Options{Size: fontSize}))
 	dc.SetColor(fg)
 
-	// Wrap text if it's long enough (more than MinTextLengthForWrapping characters = likely a quote/joke)
-	if len(text) > config.MinTextLengthForWrapping {
+	// Wrap text if it's a quote/joke (use wrapping for readability)
+	// For short text like initials or dimensions, use single-line rendering
+	if isQuoteOrJoke {
 		lines := r.wrapText(dc, text, float64(w), fontSize)
 		drawMultiLineText(dc, lines, float64(w), float64(h), fontSize)
 	} else {
-		// For initials/short text, draw as before
+		// For initials/short text/dimensions, draw as single line
 		dc.DrawStringAnchored(text, float64(w)/2, float64(h)/2, 0.5, 0.5)
 	}
 
@@ -214,7 +215,7 @@ func (r *Renderer) wrapText(dc *gg.Context, text string, imageWidth, fontSize fl
 	var lines []string
 	var currentLine string
 	
-	for i, word := range words {
+	for _, word := range words {
 		testLine := currentLine
 		if testLine != "" {
 			testLine += " " + word
@@ -238,11 +239,11 @@ func (r *Renderer) wrapText(dc *gg.Context, text string, imageWidth, fontSize fl
 				currentLine = ""
 			}
 		}
-		
-		// Add the last line
-		if i == len(words)-1 && currentLine != "" {
-			lines = append(lines, currentLine)
-		}
+	}
+	
+	// Add the last line after processing all words
+	if currentLine != "" {
+		lines = append(lines, currentLine)
 	}
 	
 	if len(lines) == 0 {
@@ -296,7 +297,7 @@ func encodeImage(img image.Image, format ImageFormat) ([]byte, error) {
 }
 
 // generateSVGWithWrapping creates an SVG representation with text wrapping support
-func (r *Renderer) generateSVGWithWrapping(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64) ([]byte, error) {
+func (r *Renderer) generateSVGWithWrapping(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64, isQuoteOrJoke bool) ([]byte, error) {
 	var buf bytes.Buffer
 
 	// SVG header
@@ -349,8 +350,9 @@ func (r *Renderer) generateSVGWithWrapping(w, h int, bgHex, fgHex, text string, 
 		fontWeight = "bold"
 	}
 
-	// For long text, wrap it
-	if len(text) > config.MinTextLengthForWrapping {
+	// Wrap text if it's a quote/joke (use wrapping for readability)
+	// For short text like initials or dimensions, use single-line rendering
+	if isQuoteOrJoke {
 		lines := wrapTextForSVG(text, float64(w), fontSize)
 		lineHeight := fontSize * 1.5
 		totalHeight := float64(len(lines)) * lineHeight
@@ -363,7 +365,7 @@ func (r *Renderer) generateSVGWithWrapping(w, h int, bgHex, fgHex, text string, 
 			buf.WriteString("\n")
 		}
 	} else {
-		// For initials/short text, draw as before
+		// For initials/short text/dimensions, draw as single line
 		buf.WriteString(fmt.Sprintf(`<text x="%d" y="%d" font-family="sans-serif" font-size="%.0f" font-weight="%s" fill="#%s" text-anchor="middle" dominant-baseline="middle">%s</text>`,
 			w/2, h/2, fontSize, fontWeight, fgHex, escapeXML(text)))
 		buf.WriteString("\n")
