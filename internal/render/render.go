@@ -356,7 +356,8 @@ func (r *Renderer) generateSVGWithWrapping(w, h int, bgHex, fgHex, text string, 
 		lines := wrapTextForSVG(text, float64(w), fontSize)
 		lineHeight := fontSize * 1.5
 		totalHeight := float64(len(lines)) * lineHeight
-		startY := (float64(h)-totalHeight)/2 + lineHeight/2
+		centerY := float64(h) / 2
+		startY := centerY - (totalHeight-lineHeight)/2
 
 		for i, line := range lines {
 			y := startY + float64(i)*lineHeight
