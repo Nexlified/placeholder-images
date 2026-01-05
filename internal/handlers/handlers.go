@@ -407,9 +407,13 @@ func (s *Service) readStaticFile(filename string, fallback string) string {
 		return fallback
 	}
 	
-	// Ensure the resolved path is within the static directory
-	if !strings.HasPrefix(absFilePath, absStaticDir+string(filepath.Separator)) &&
-		absFilePath != absStaticDir {
+	// Ensure the static directory ends with a path separator for proper prefix checking
+	if !strings.HasSuffix(absStaticDir, string(filepath.Separator)) {
+		absStaticDir += string(filepath.Separator)
+	}
+	
+	// Ensure the resolved path is within the static directory (must be a file, not the directory itself)
+	if !strings.HasPrefix(absFilePath, absStaticDir) {
 		return fallback
 	}
 	
