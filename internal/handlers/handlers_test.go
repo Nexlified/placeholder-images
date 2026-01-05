@@ -547,3 +547,114 @@ func TestSitemapXmlHandler(t *testing.T) {
 		}
 	}
 }
+
+func TestPlaceholderHandlerMinimumWidthForQuotes(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
+	svc.RegisterRoutes(mux)
+
+	tests := []struct {
+		name        string
+		path        string
+		expectQuote bool
+	}{
+		{"Quote with sufficient width", "/placeholder/800x400?quote=true", true},
+		{"Quote with minimum width", "/placeholder/300x400?quote=true", true},
+		{"Quote with insufficient width", "/placeholder/200x400?quote=true", false},
+		{"Joke with sufficient width", "/placeholder/600x300?joke=true", true},
+		{"Joke with insufficient width", "/placeholder/250x300?joke=true", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			mux.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected 200 got %d", rec.Code)
+			}
+			if rec.Body.Len() == 0 {
+				t.Fatal("expected body to contain image data")
+			}
+		})
+	}
+}
+
+func TestAvatarHandlerBackgroundParamConsistency(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
+	svc.RegisterRoutes(mux)
+
+	tests := []struct {
+		name string
+		path string
+	}{
+		{"Using background param", "/avatar/JohnDoe?background=ff0000"},
+		{"Using bg param", "/avatar/JohnDoe?bg=ff0000"},
+		{"Using both (background takes precedence)", "/avatar/JohnDoe?background=ff0000&bg=00ff00"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			mux.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected 200 got %d", rec.Code)
+			}
+			if rec.Body.Len() == 0 {
+				t.Fatal("expected body to contain image data")
+			}
+		})
+	}
+}
+
+func TestPlaceholderHandlerBackgroundParamConsistency(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
+	svc.RegisterRoutes(mux)
+
+	tests := []struct {
+		name string
+		path string
+	}{
+		{"Using background param", "/placeholder/400x300?background=ff0000"},
+		{"Using bg param", "/placeholder/400x300?bg=ff0000"},
+		{"Using both (background takes precedence)", "/placeholder/400x300?background=ff0000&bg=00ff00"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			mux.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected 200 got %d", rec.Code)
+			}
+			if rec.Body.Len() == 0 {
+				t.Fatal("expected body to contain image data")
+			}
+		})
+	}
+}

@@ -129,7 +129,11 @@ func (s *Service) handleAvatar(w http.ResponseWriter, r *http.Request) {
 	rounded := r.URL.Query().Get("rounded") == "true"
 	bold := r.URL.Query().Get("bold") == "true"
 
+	// Accept both 'background' and 'bg' for consistency (background is primary)
 	bgHex := r.URL.Query().Get("background")
+	if bgHex == "" {
+		bgHex = r.URL.Query().Get("bg")
+	}
 	if bgHex == "" {
 		bgHex = config.DefaultAvatarBg
 	}
@@ -169,13 +173,16 @@ func (s *Service) handlePlaceholder(w http.ResponseWriter, r *http.Request) {
 	category := r.URL.Query().Get("category")
 
 	text := r.URL.Query().Get("text")
+	isQuoteOrJoke := false
 
 	// Priority: quote > joke > text > default
-	if quoteParam == "true" || quoteParam == "1" {
+	// Only render quote/joke if minimum width requirement is met
+	if (quoteParam == "true" || quoteParam == "1") && width >= config.MinWidthForQuoteJoke {
 		if s.contentManager != nil {
 			randomQuote, err := s.contentManager.GetRandom(content.ContentTypeQuote, category)
 			if err == nil {
 				text = randomQuote
+				isQuoteOrJoke = true
 			} else {
 				// If error (e.g., invalid category), fall back to text or default
 				if text == "" {
@@ -183,11 +190,12 @@ func (s *Service) handlePlaceholder(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-	} else if jokeParam == "true" || jokeParam == "1" {
+	} else if (jokeParam == "true" || jokeParam == "1") && width >= config.MinWidthForQuoteJoke {
 		if s.contentManager != nil {
 			randomJoke, err := s.contentManager.GetRandom(content.ContentTypeJoke, category)
 			if err == nil {
 				text = randomJoke
+				isQuoteOrJoke = true
 			} else {
 				// If error (e.g., invalid category), fall back to text or default
 				if text == "" {
@@ -199,7 +207,11 @@ func (s *Service) handlePlaceholder(w http.ResponseWriter, r *http.Request) {
 		text = fmt.Sprintf("%d x %d", width, height)
 	}
 
-	bgHex := r.URL.Query().Get("bg")
+	// Accept both 'background' and 'bg' for consistency (background is primary)
+	bgHex := r.URL.Query().Get("background")
+	if bgHex == "" {
+		bgHex = r.URL.Query().Get("bg")
+	}
 	if bgHex == "" {
 		bgHex = config.DefaultBgColor
 	}
@@ -210,7 +222,7 @@ func (s *Service) handlePlaceholder(w http.ResponseWriter, r *http.Request) {
 
 	key := fmt.Sprintf("PH:%d:%d:%s:%s:%s:%s", width, height, bgHex, fgHex, text, format)
 	s.serveImage(w, r, key, format, func() ([]byte, error) {
-		return s.renderer.DrawImageWithFormat(width, height, bgHex, fgHex, text, false, true, format)
+		return s.renderer.DrawPlaceholderImage(width, height, bgHex, fgHex, text, isQuoteOrJoke, format)
 	})
 }
 

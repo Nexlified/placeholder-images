@@ -25,7 +25,7 @@ Generates a square avatar that displays the initials derived from the provided n
 - **Path**: `/avatar/{name}[.ext]` where `ext` can be `svg`, `png`, `jpg`, `jpeg`, `gif`, or `webp`. You can also use the `name` query parameter.
 - **Format**: Images are served as SVG by default when no extension is specified. Use `.svg`, `.png`, `.jpg`, `.jpeg`, `.gif`, or `.webp` extension to request a specific format.
 - **Size**: `size` query parameter (default `128`), applied to both width and height.
-- **Background Color**: `background` query parameter accepts hex (`f0e9e9`) or the literal `random` to derive a deterministic color per name.
+- **Background Color**: `background` or `bg` query parameter accepts hex (`f0e9e9`) or the literal `random` to derive a deterministic color per name.
 - **Text Color**: `color` query parameter (hex, default auto-contrasted).
 - **Rounded**: `rounded=true` draws a circle instead of a square.
 - **Bold**: `bold=true` switches to the embedded Go Bold font.
@@ -47,21 +47,30 @@ curl "http://localhost:8080/avatar/Jane+Doe.jpg?size=256"
 
 # WebP format
 curl "http://localhost:8080/avatar/Jane+Doe.webp?size=256"
+
+# Using 'bg' parameter (shorthand for background)
+curl "http://localhost:8080/avatar/Jane+Doe?size=256&bg=ff5733"
 ```
 
 ## `/placeholder/` Endpoint
 
-Creates a rectangular placeholder image with custom dimensions and optional overlay text.
+Creates a rectangular placeholder image with custom dimensions and optional overlay text. Supports automatic text wrapping for long content like quotes and jokes.
 
 - **Path Form**: `/placeholder/{width}x{height}[.ext]` where `ext` can be `svg`, `png`, `jpg`, `jpeg`, `gif`, or `webp`. If extension is omitted, images are served as SVG by default.
 - **Format**: Images are served as SVG by default when no extension is specified. Use `.svg`, `.png`, `.jpg`, `.jpeg`, `.gif`, or `.webp` extension to request a specific format.
 - **Dimensions**: Can also use query parameters `w` and `h` (default `128`).
 - **Text**: `text` query parameter (defaults to "{width} x {height}").
-- **Quote**: `quote=true` query parameter to use a random quote instead of custom text.
-- **Joke**: `joke=true` query parameter to use a random joke instead of custom text.
+- **Quote**: `quote=true` query parameter to use a random quote instead of custom text. **Requires minimum width of 300px.**
+- **Joke**: `joke=true` query parameter to use a random joke instead of custom text. **Requires minimum width of 300px.**
 - **Category**: `category` query parameter to filter quotes/jokes by category (optional).
-- **Background Color**: `bg` query parameter (hex, default `cccccc`). Supports gradients with comma-separated colors (e.g., `ff0000,0000ff` for red to blue).
+- **Background Color**: `background` or `bg` query parameter (hex, default `cccccc`). Supports gradients with comma-separated colors (e.g., `ff0000,0000ff` for red to blue).
 - **Text Color**: `color` query parameter (hex, default auto-contrasted).
+
+**Text Rendering Features:**
+- Automatic text wrapping for quotes and jokes based on image width
+- Content is centered with 10% padding on all sides
+- Dynamic font sizing (16px-48px) based on text length and image dimensions
+- Multi-line text support with 1.5x line spacing for readability
 
 ### Quote Categories
 
@@ -89,12 +98,12 @@ Examples:
 
 ```bash
 # Default SVG format
-curl "http://localhost:8080/placeholder/800x400?text=Hero+Image&bg=222222&color=f5f5f5"
+curl "http://localhost:8080/placeholder/800x400?text=Hero+Image&background=222222&color=f5f5f5"
 
 # SVG format (explicit)
-curl "http://localhost:8080/placeholder/800x400.svg?text=Hero+Image&bg=222222&color=f5f5f5"
+curl "http://localhost:8080/placeholder/800x400.svg?text=Hero+Image&background=222222&color=f5f5f5"
 
-# PNG format
+# PNG format (using 'bg' shorthand)
 curl "http://localhost:8080/placeholder/800x400.png?text=Hero+Image&bg=222222&color=f5f5f5"
 
 # JPG format
@@ -109,11 +118,11 @@ curl "http://localhost:8080/placeholder/800x400?bg=ff0000,0000ff&text=Gradient"
 # Gradient background (green to yellow, PNG)
 curl "http://localhost:8080/placeholder/1200x600.png?bg=00ff00,ffff00"
 
-# Random quote (any category)
+# Random quote (any category) - text wraps automatically
 curl "http://localhost:8080/placeholder/1200x400?quote=true"
 
-# Random inspirational quote
-curl "http://localhost:8080/placeholder/1200x400?quote=true&category=inspirational"
+# Random inspirational quote with custom colors
+curl "http://localhost:8080/placeholder/1200x400?quote=true&category=inspirational&bg=2c3e50&color=ecf0f1"
 
 # Random programming joke
 curl "http://localhost:8080/placeholder/800x600.png?joke=true&category=programming"

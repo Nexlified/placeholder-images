@@ -17,6 +17,8 @@ import (
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/goregular"
+
+	"grout/internal/config"
 )
 
 // Renderer is responsible for drawing avatars and placeholders.
@@ -74,6 +76,56 @@ func (r *Renderer) DrawImage(w, h int, bgHex, fgHex, text string, rounded, bold 
 	return r.DrawImageWithFormat(w, h, bgHex, fgHex, text, rounded, bold, FormatSVG)
 }
 
+// DrawPlaceholderImage renders a placeholder image with optimized font sizing for quotes/jokes
+func (r *Renderer) DrawPlaceholderImage(w, h int, bgHex, fgHex, text string, isQuoteOrJoke bool, format ImageFormat) ([]byte, error) {
+	// Calculate font size based on whether it's a quote/joke or regular placeholder
+	var fontSize float64
+
+	if isQuoteOrJoke {
+		// For quotes/jokes, use dynamic sizing based on text length and image dimensions
+		// Start with a base size relative to height
+		fontSize = float64(h) * 0.08
+
+		// Adjust based on text length
+		textLen := len(text)
+		if textLen > 200 {
+			fontSize = float64(h) * 0.05
+		} else if textLen > 100 {
+			fontSize = float64(h) * 0.06
+		}
+
+		// Apply min/max bounds from config
+		if fontSize < config.MinFontSize {
+			fontSize = config.MinFontSize
+		}
+		if fontSize > config.MaxFontSize {
+			fontSize = config.MaxFontSize
+		}
+	} else {
+		// For regular placeholders (dimensions text, initials), use existing logic
+		minDim := float64(w)
+		if float64(h) < minDim {
+			minDim = float64(h)
+		}
+
+		fontSize = minDim * 0.5
+		if len(text) > config.MinTextLengthForWrapping {
+			fontSize = minDim * 0.15
+			if fontSize < 12 {
+				fontSize = 12
+			}
+		}
+	}
+
+	// For SVG format, generate directly without rasterization
+	if format == FormatSVG {
+		return r.generateSVGWithWrapping(w, h, bgHex, fgHex, text, false, true, fontSize, isQuoteOrJoke)
+	}
+
+	// For raster formats, create the image using gg
+	return r.drawRasterImageWithWrapping(w, h, bgHex, fgHex, text, false, true, fontSize, isQuoteOrJoke, format)
+}
+
 // DrawImageWithFormat renders an image in the specified format with provided options.
 func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, rounded, bold bool, format ImageFormat) ([]byte, error) {
 	// Calculate font size for consistent rendering across formats
@@ -83,7 +135,7 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 	}
 
 	fontSize := minDim * 0.5
-	if len(text) > 2 {
+	if len(text) > config.MinTextLengthForWrapping {
 		fontSize = minDim * 0.15
 		if fontSize < 12 {
 			fontSize = 12
@@ -92,10 +144,15 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 
 	// For SVG format, generate directly without rasterization
 	if format == FormatSVG {
-		return generateSVG(w, h, bgHex, fgHex, text, rounded, bold, fontSize)
+		return r.generateSVGWithWrapping(w, h, bgHex, fgHex, text, rounded, bold, fontSize, false)
 	}
 
 	// For raster formats, create the image using gg
+	return r.drawRasterImageWithWrapping(w, h, bgHex, fgHex, text, rounded, bold, fontSize, false, format)
+}
+
+// drawRasterImageWithWrapping renders a raster image with text wrapping support
+func (r *Renderer) drawRasterImageWithWrapping(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64, isQuoteOrJoke bool, format ImageFormat) ([]byte, error) {
 	dc := gg.NewContext(w, h)
 
 	// Check if bgHex contains a gradient (comma-separated colors)
@@ -130,9 +187,88 @@ func (r *Renderer) DrawImageWithFormat(w, h int, bgHex, fgHex, text string, roun
 	}
 	dc.SetFontFace(truetype.NewFace(font, &truetype.Options{Size: fontSize}))
 	dc.SetColor(fg)
-	dc.DrawStringAnchored(text, float64(w)/2, float64(h)/2, 0.5, 0.5)
+
+	// Wrap text if it's a quote/joke (use wrapping for readability)
+	// For short text like initials or dimensions, use single-line rendering
+	if isQuoteOrJoke {
+		lines := r.wrapText(dc, text, float64(w), fontSize)
+		drawMultiLineText(dc, lines, float64(w), float64(h), fontSize)
+	} else {
+		// For initials/short text/dimensions, draw as single line
+		dc.DrawStringAnchored(text, float64(w)/2, float64(h)/2, 0.5, 0.5)
+	}
 
 	return encodeImage(dc.Image(), format)
+}
+
+// wrapText breaks text into lines that fit within the given width with padding
+func (r *Renderer) wrapText(dc *gg.Context, text string, imageWidth, fontSize float64) []string {
+	// Calculate available width with padding (10% on each side = 80% usable)
+	padding := imageWidth * 0.1
+	maxWidth := imageWidth - (2 * padding)
+
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return []string{text}
+	}
+
+	var lines []string
+	var currentLine string
+
+	for _, word := range words {
+		testLine := currentLine
+		if testLine != "" {
+			testLine += " " + word
+		} else {
+			testLine = word
+		}
+
+		// Measure the width of the test line
+		width, _ := dc.MeasureString(testLine)
+
+		if width <= maxWidth {
+			currentLine = testLine
+		} else {
+			// Line is too long, save current line and start new one
+			if currentLine != "" {
+				lines = append(lines, currentLine)
+				currentLine = word
+			} else {
+				// Single word is too long, add it anyway
+				lines = append(lines, word)
+				currentLine = ""
+			}
+		}
+	}
+
+	// Add the last line after processing all words
+	if currentLine != "" {
+		lines = append(lines, currentLine)
+	}
+
+	if len(lines) == 0 {
+		return []string{text}
+	}
+
+	return lines
+}
+
+// drawMultiLineText draws multiple lines of text centered on the image
+func drawMultiLineText(dc *gg.Context, lines []string, width, height, fontSize float64) {
+	lineHeight := fontSize * 1.5 // 1.5x line spacing for readability
+
+	// The actual text block height is one font-sized line plus spacing between lines.
+	// This avoids counting extra leading above the first line and below the last line.
+	totalHeight := fontSize + float64(len(lines)-1)*lineHeight
+
+	// Calculate starting Y position to center the text block vertically
+	// Use fontSize/2 to align the first line to the actual text height, not the line spacing.
+	startY := (height-totalHeight)/2 + fontSize/2
+	// Draw each line centered horizontally
+	for i, line := range lines {
+		y := startY + float64(i)*lineHeight
+		dc.DrawStringAnchored(line, width/2, y, 0.5, 0.5)
+	}
 }
 
 // encodeImage encodes a rasterized image in the specified format (PNG, JPEG, GIF, WebP)
@@ -163,8 +299,8 @@ func encodeImage(img image.Image, format ImageFormat) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// generateSVG creates an SVG representation of the image
-func generateSVG(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64) ([]byte, error) {
+// generateSVGWithWrapping creates an SVG representation with text wrapping support
+func (r *Renderer) generateSVGWithWrapping(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSize float64, isQuoteOrJoke bool) ([]byte, error) {
 	var buf bytes.Buffer
 
 	// SVG header
@@ -211,22 +347,91 @@ func generateSVG(w, h int, bgHex, fgHex, text string, rounded, bold bool, fontSi
 	}
 	buf.WriteString("\n")
 
-	// Text element
-	// SVG text is positioned by baseline, so we need to adjust.
-	// Use a generic sans-serif family to broadly match the embedded Go fonts (goregular/gobold).
-	// Using dominant-baseline="middle" and text-anchor="middle" for centering.
+	// Text element(s)
 	fontWeight := "normal"
 	if bold {
 		fontWeight = "bold"
 	}
-	buf.WriteString(fmt.Sprintf(`<text x="%d" y="%d" font-family="sans-serif" font-size="%.0f" font-weight="%s" fill="#%s" text-anchor="middle" dominant-baseline="middle">%s</text>`,
-		w/2, h/2, fontSize, fontWeight, fgHex, escapeXML(text)))
-	buf.WriteString("\n")
+
+	// Wrap text if it's a quote/joke (use wrapping for readability)
+	// For short text like initials or dimensions, use single-line rendering
+	if isQuoteOrJoke {
+		lines := wrapTextForSVG(text, float64(w), fontSize)
+		lineHeight := fontSize * 1.5
+		totalHeight := float64(len(lines)) * lineHeight
+		centerY := float64(h) / 2
+		startY := centerY - (totalHeight-lineHeight)/2
+
+		for i, line := range lines {
+			y := startY + float64(i)*lineHeight
+			buf.WriteString(fmt.Sprintf(`<text x="%d" y="%.0f" font-family="sans-serif" font-size="%.0f" font-weight="%s" fill="#%s" text-anchor="middle" dominant-baseline="middle">%s</text>`,
+				w/2, y, fontSize, fontWeight, fgHex, escapeXML(line)))
+			buf.WriteString("\n")
+		}
+	} else {
+		// For initials/short text/dimensions, draw as single line
+		buf.WriteString(fmt.Sprintf(`<text x="%d" y="%d" font-family="sans-serif" font-size="%.0f" font-weight="%s" fill="#%s" text-anchor="middle" dominant-baseline="middle">%s</text>`,
+			w/2, h/2, fontSize, fontWeight, fgHex, escapeXML(text)))
+		buf.WriteString("\n")
+	}
 
 	// Close SVG
 	buf.WriteString("</svg>")
 
 	return buf.Bytes(), nil
+}
+
+// wrapTextForSVG breaks text into lines for SVG rendering (simpler version without measuring)
+func wrapTextForSVG(text string, imageWidth, fontSize float64) []string {
+	// Estimate character width as roughly 0.6 * fontSize
+	charWidth := fontSize * 0.6
+	padding := imageWidth * 0.1
+	maxWidth := imageWidth - (2 * padding)
+	maxCharsPerLine := int(maxWidth / charWidth)
+
+	if maxCharsPerLine < config.MinCharsPerLine {
+		maxCharsPerLine = config.MinCharsPerLine
+	}
+
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return []string{text}
+	}
+
+	var lines []string
+	var currentLine string
+
+	for _, word := range words {
+		testLine := currentLine
+		if testLine != "" {
+			testLine += " " + word
+		} else {
+			testLine = word
+		}
+
+		if len(testLine) <= maxCharsPerLine {
+			currentLine = testLine
+		} else {
+			if currentLine != "" {
+				lines = append(lines, currentLine)
+				currentLine = word
+			} else {
+				// Single word is too long, add it anyway
+				lines = append(lines, word)
+				currentLine = ""
+			}
+		}
+	}
+
+	if currentLine != "" {
+		lines = append(lines, currentLine)
+	}
+
+	if len(lines) == 0 {
+		return []string{text}
+	}
+
+	return lines
 }
 
 // escapeXML escapes special XML characters in text
