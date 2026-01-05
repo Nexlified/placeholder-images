@@ -15,11 +15,13 @@ const (
 	DefaultAddr              = ":8080"
 	DefaultDomain            = "localhost:8080"
 	CacheSize                = 2000
-	MinWidthForQuoteJoke     = 300 // Minimum width required to render quotes/jokes
-	MinFontSize              = 16  // Minimum font size for readability
-	MaxFontSize              = 48  // Maximum font size to avoid huge text
-	MinTextLengthForWrapping = 2   // Text longer than this will use wrapping logic
-	MinCharsPerLine          = 10  // Minimum characters per line for SVG text estimation
+	MinWidthForQuoteJoke      = 300 // Minimum width required to render quotes/jokes
+	MinFontSize               = 16  // Minimum font size for readability
+	MaxFontSize               = 48  // Maximum font size to avoid huge text
+	MinTextLengthForSmallFont = 2   // Text longer than this uses smaller font (and may enable wrapping)
+	// MinTextLengthForWrapping is kept for backward compatibility; prefer MinTextLengthForSmallFont.
+	MinTextLengthForWrapping = MinTextLengthForSmallFont
+	MinCharsPerLine          = 10 // Minimum characters per line for SVG text estimation
 )
 
 // ServerConfig represents runtime server settings.
