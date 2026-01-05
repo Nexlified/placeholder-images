@@ -7,14 +7,14 @@ import (
 )
 
 const (
-	DefaultSize              = 128
-	DefaultBgColor           = "cccccc"
-	DefaultFontColor         = "969696"
-	DefaultAvatarBg          = "f0e9e9"
-	DefaultAvatarFg          = "8b5d5d"
-	DefaultAddr              = ":8080"
-	DefaultDomain            = "localhost:8080"
-	CacheSize                = 2000
+	DefaultSize               = 128
+	DefaultBgColor            = "cccccc"
+	DefaultFontColor          = "969696"
+	DefaultAvatarBg           = "f0e9e9"
+	DefaultAvatarFg           = "8b5d5d"
+	DefaultAddr               = ":8080"
+	DefaultDomain             = "localhost:8080"
+	CacheSize                 = 2000
 	MinWidthForQuoteJoke      = 300 // Minimum width required to render quotes/jokes
 	MinFontSize               = 16  // Minimum font size for readability
 	MaxFontSize               = 48  // Maximum font size to avoid huge text
