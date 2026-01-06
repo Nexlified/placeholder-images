@@ -60,7 +60,7 @@ func TestReadStaticFileSecurityDirectoryTraversal(t *testing.T) {
 		{
 			name:     "Multiple path separators",
 			filename: "//robots.txt",
-			expected: "fallback", // Should be blocked (absolute path)
+			expected: "fallback", // Should be blocked (resolves to absolute path)
 		},
 		{
 			name:     "Path with backslash Windows style",
