@@ -30,7 +30,6 @@ func TestIntegrationMain(t *testing.T) {
 	}
 	cache, _ := lru.New[string, []byte](2000)
 	cfg := config.DefaultServerConfig()
-	cfg.Domain = "localhost:8080"
 	svc := NewService(renderer, cache, cfg)
 	mux := http.NewServeMux()
 	svc.RegisterRoutes(mux)
@@ -53,12 +52,25 @@ func TestIntegrationMain(t *testing.T) {
 	}()
 	defer server.Close()
 
-	// Wait for server to be ready
-	time.Sleep(100 * time.Millisecond)
-
-	// Create HTTP client
+	// Wait for server to be ready by polling health endpoint
 	client := &http.Client{
 		Timeout: 5 * time.Second,
+	}
+
+	// Poll server health endpoint until ready or timeout
+	maxAttempts := 50
+	for i := 0; i < maxAttempts; i++ {
+		resp, err := client.Get(serverAddr + "/health")
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				break
+			}
+		}
+		if i == maxAttempts-1 {
+			t.Fatal("server failed to become ready within timeout")
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	// Run all integration test scenarios
