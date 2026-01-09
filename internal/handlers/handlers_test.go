@@ -20,7 +20,7 @@ func TestAvatarHandlerDefaults(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/avatar/", nil)
 	rec := httptest.NewRecorder()
@@ -47,7 +47,7 @@ func TestAvatarHandlerFormats(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	tests := []struct {
 		name        string
@@ -91,7 +91,7 @@ func TestPlaceholderHandlerFormats(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	tests := []struct {
 		name        string
@@ -134,7 +134,7 @@ func TestPlaceholderHandlerGradient(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	tests := []struct {
 		name string
@@ -170,7 +170,7 @@ func TestHomeHandler(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
@@ -213,7 +213,7 @@ func TestHomeHandlerNotFound(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/nonexistent", nil)
 	rec := httptest.NewRecorder()
@@ -233,7 +233,7 @@ func TestFaviconHandler(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/favicon.ico", nil)
 	rec := httptest.NewRecorder()
@@ -263,7 +263,7 @@ func TestPlaceholderHandlerWithQuote(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	tests := []struct {
 		name string
@@ -299,7 +299,7 @@ func TestPlaceholderHandlerWithJoke(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	tests := []struct {
 		name string
@@ -335,7 +335,7 @@ func TestPlaceholderHandlerWithInvalidCategory(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	// With invalid category, should fall back to default dimensions text
 	req := httptest.NewRequest(http.MethodGet, "/placeholder/800x400?quote=true&category=nonexistent", nil)
@@ -359,7 +359,7 @@ func TestErrorPage404(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/nonexistent", nil)
 	rec := httptest.NewRecorder()
@@ -480,7 +480,7 @@ func TestRobotsTxtHandler(t *testing.T) {
 	cfg.Domain = "example.com"
 	svc := NewService(renderer, cache, cfg)
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
 	rec := httptest.NewRecorder()
@@ -518,7 +518,7 @@ func TestSitemapXmlHandler(t *testing.T) {
 	cfg.Domain = "example.com"
 	svc := NewService(renderer, cache, cfg)
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/sitemap.xml", nil)
 	rec := httptest.NewRecorder()
@@ -556,7 +556,7 @@ func TestPlaceholderHandlerMinimumWidthForQuotes(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	tests := []struct {
 		name        string
@@ -595,7 +595,7 @@ func TestAvatarHandlerBackgroundParamConsistency(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	tests := []struct {
 		name string
@@ -631,7 +631,7 @@ func TestPlaceholderHandlerBackgroundParamConsistency(t *testing.T) {
 	cache, _ := lru.New[string, []byte](1)
 	svc := NewService(renderer, cache, config.DefaultServerConfig())
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, nil)
 
 	tests := []struct {
 		name string
@@ -654,6 +654,66 @@ func TestPlaceholderHandlerBackgroundParamConsistency(t *testing.T) {
 			}
 			if rec.Body.Len() == 0 {
 				t.Fatal("expected body to contain image data")
+			}
+		})
+	}
+}
+
+// rateLimiterWrapper is a test helper that wraps a middleware function
+type rateLimiterWrapper struct {
+	middleware func(http.Handler) http.Handler
+}
+
+func (w rateLimiterWrapper) Middleware(next http.Handler) http.Handler {
+	return w.middleware(next)
+}
+
+func TestRateLimitingIntegration(t *testing.T) {
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
+
+	// Mock rate limiter for testing
+	count := 0
+	rlMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count++
+			if count > 2 {
+				http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	middlewareWrapper := rateLimiterWrapper{middleware: rlMiddleware}
+	svc.RegisterRoutes(mux, middlewareWrapper)
+
+	tests := []struct {
+		name           string
+		path           string
+		expectedStatus int
+	}{
+		{"First avatar request should succeed", "/avatar/JohnDoe", http.StatusOK},
+		{"Second avatar request should succeed", "/avatar/JaneDoe", http.StatusOK},
+		{"Third avatar request should be rate limited", "/avatar/BobSmith", http.StatusTooManyRequests},
+		{"Favicon should not be rate limited", "/favicon.ico", http.StatusOK},
+		{"Health should not be rate limited", "/health", http.StatusOK},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			mux.ServeHTTP(rec, req)
+
+			if rec.Code != tt.expectedStatus {
+				t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Code)
 			}
 		})
 	}

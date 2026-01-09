@@ -147,6 +147,23 @@ If generation fails (for example due to invalid parameters), the server responds
 - `CACHE_SIZE` env var or `-cache-size` flag sets LRU entry count (default `2000`).
 - `DOMAIN` env var or `-domain` flag sets the public domain for example URLs in the home page (default `localhost:8080`).
 - `STATIC_DIR` env var or `-static-dir` flag sets the directory for static files like `robots.txt` and `sitemap.xml` (default `./static`).
+- `RATE_LIMIT_RPM` env var or `-rate-limit-rpm` flag sets the rate limit in requests per minute per IP (default `100`).
+- `RATE_LIMIT_BURST` env var or `-rate-limit-burst` flag sets the burst size for the rate limiter (default `10`).
+
+### Rate Limiting
+
+Grout implements per-IP rate limiting to prevent DoS attacks. By default:
+- `/avatar/` and `/placeholder/` endpoints are rate limited to **100 requests per minute per IP** with a burst of **10**
+- Static assets (`/favicon.ico`, `/robots.txt`, `/sitemap.xml`) and the health endpoint (`/health`) are **not rate limited**
+- Rate limiting is based on client IP, respecting `X-Forwarded-For` and `X-Real-IP` headers for proxy scenarios
+- When the rate limit is exceeded, the server returns HTTP `429 Too Many Requests`
+
+To adjust the rate limits, set the environment variables or use command-line flags:
+
+```bash
+# Allow 200 requests per minute with burst of 20
+RATE_LIMIT_RPM=200 RATE_LIMIT_BURST=20 go run ./cmd/grout
+```
 
 ### Docker Configuration
 
@@ -158,6 +175,8 @@ environment:
   CACHE_SIZE: "5000"
   DOMAIN: "grout.example.com"
   STATIC_DIR: "/app/static"
+  RATE_LIMIT_RPM: "200"
+  RATE_LIMIT_BURST: "20"
 ```
 
 ### Static Files

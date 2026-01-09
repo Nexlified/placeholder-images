@@ -9,6 +9,7 @@ import (
 
 	"grout/internal/config"
 	"grout/internal/handlers"
+	"grout/internal/middleware"
 	"grout/internal/render"
 )
 
@@ -25,10 +26,12 @@ func main() {
 		log.Fatalf("init cache: %v", err)
 	}
 
+	rateLimiter := middleware.NewRateLimiter(cfg.RateLimitRPM, cfg.RateLimitBurst)
+
 	svc := handlers.NewService(renderer, cache, cfg)
 	mux := http.NewServeMux()
-	svc.RegisterRoutes(mux)
+	svc.RegisterRoutes(mux, rateLimiter)
 
-	fmt.Println("Grout running on", cfg.Addr)
+	fmt.Printf("Grout running on %s (rate limit: %d req/min, burst: %d)\n", cfg.Addr, cfg.RateLimitRPM, cfg.RateLimitBurst)
 	log.Fatal(http.ListenAndServe(cfg.Addr, mux))
 }
