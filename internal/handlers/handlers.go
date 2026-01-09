@@ -62,7 +62,7 @@ func NewService(renderer *render.Renderer, cache *lru.Cache[string, []byte], cfg
 func (s *Service) RegisterRoutes(mux *http.ServeMux, rateLimiter interface{}) {
 	// Type-safe way to handle optional rate limiter
 	var applyRateLimit func(http.Handler) http.Handler
-	
+
 	// Check if rate limiter is provided and has the right type
 	if rl, ok := rateLimiter.(interface {
 		Middleware(http.Handler) http.Handler

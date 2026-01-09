@@ -659,63 +659,62 @@ func TestPlaceholderHandlerBackgroundParamConsistency(t *testing.T) {
 	}
 }
 
-
 // rateLimiterWrapper is a test helper that wraps a middleware function
 type rateLimiterWrapper struct {
-middleware func(http.Handler) http.Handler
+	middleware func(http.Handler) http.Handler
 }
 
 func (w rateLimiterWrapper) Middleware(next http.Handler) http.Handler {
-return w.middleware(next)
+	return w.middleware(next)
 }
 
 func TestRateLimitingIntegration(t *testing.T) {
-renderer, err := render.New()
-if err != nil {
-t.Fatalf("renderer init: %v", err)
-}
-cache, _ := lru.New[string, []byte](1)
-svc := NewService(renderer, cache, config.DefaultServerConfig())
-mux := http.NewServeMux()
+	renderer, err := render.New()
+	if err != nil {
+		t.Fatalf("renderer init: %v", err)
+	}
+	cache, _ := lru.New[string, []byte](1)
+	svc := NewService(renderer, cache, config.DefaultServerConfig())
+	mux := http.NewServeMux()
 
-// Mock rate limiter for testing
-count := 0
-rlMiddleware := func(next http.Handler) http.Handler {
-return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-count++
-if count > 2 {
-http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
-return
-}
-next.ServeHTTP(w, r)
-})
-}
+	// Mock rate limiter for testing
+	count := 0
+	rlMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count++
+			if count > 2 {
+				http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 
-middlewareWrapper := rateLimiterWrapper{middleware: rlMiddleware}
-svc.RegisterRoutes(mux, middlewareWrapper)
+	middlewareWrapper := rateLimiterWrapper{middleware: rlMiddleware}
+	svc.RegisterRoutes(mux, middlewareWrapper)
 
-tests := []struct {
-name           string
-path           string
-expectedStatus int
-}{
-{"First avatar request should succeed", "/avatar/JohnDoe", http.StatusOK},
-{"Second avatar request should succeed", "/avatar/JaneDoe", http.StatusOK},
-{"Third avatar request should be rate limited", "/avatar/BobSmith", http.StatusTooManyRequests},
-{"Favicon should not be rate limited", "/favicon.ico", http.StatusOK},
-{"Health should not be rate limited", "/health", http.StatusOK},
-}
+	tests := []struct {
+		name           string
+		path           string
+		expectedStatus int
+	}{
+		{"First avatar request should succeed", "/avatar/JohnDoe", http.StatusOK},
+		{"Second avatar request should succeed", "/avatar/JaneDoe", http.StatusOK},
+		{"Third avatar request should be rate limited", "/avatar/BobSmith", http.StatusTooManyRequests},
+		{"Favicon should not be rate limited", "/favicon.ico", http.StatusOK},
+		{"Health should not be rate limited", "/health", http.StatusOK},
+	}
 
-for _, tt := range tests {
-t.Run(tt.name, func(t *testing.T) {
-req := httptest.NewRequest(http.MethodGet, tt.path, nil)
-rec := httptest.NewRecorder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			rec := httptest.NewRecorder()
 
-mux.ServeHTTP(rec, req)
+			mux.ServeHTTP(rec, req)
 
-if rec.Code != tt.expectedStatus {
-t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Code)
-}
-})
-}
+			if rec.Code != tt.expectedStatus {
+				t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Code)
+			}
+		})
+	}
 }

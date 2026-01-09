@@ -24,7 +24,7 @@ const (
 	MinTextLengthForWrapping = MinTextLengthForSmallFont
 	MinCharsPerLine          = 10 // Minimum characters per line for SVG text estimation
 	// Rate limiting defaults
-	DefaultRateLimitRPM  = 100 // Default requests per minute per IP
+	DefaultRateLimitRPM   = 100 // Default requests per minute per IP
 	DefaultRateLimitBurst = 10  // Default burst size for rate limiter
 )
 
