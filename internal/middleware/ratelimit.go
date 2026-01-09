@@ -94,7 +94,7 @@ func getIP(r *http.Request) string {
 	}
 
 	// Check X-Real-IP header
-	realIP := r.Header.Get("X-Real-IP")
+	realIP := strings.TrimSpace(r.Header.Get("X-Real-IP"))
 	if realIP != "" {
 		return realIP
 	}
