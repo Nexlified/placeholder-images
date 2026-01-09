@@ -440,7 +440,7 @@ func testCachingBehaviorIntegration(t *testing.T, client *http.Client, baseURL s
 	_ = resp1.Header.Get("X-Cache")
 
 	// Read body to ensure request completes
-	io.ReadAll(resp1.Body)
+	_, _ = io.ReadAll(resp1.Body)
 
 	// Second request - should have same ETag and X-Cache: HIT
 	resp2, err := client.Get(url)
@@ -464,7 +464,7 @@ func testCachingBehaviorIntegration(t *testing.T, client *http.Client, baseURL s
 	}
 
 	// Read body
-	io.ReadAll(resp2.Body)
+	_, _ = io.ReadAll(resp2.Body)
 
 	// Test Cache-Control header
 	if cc := resp1.Header.Get("Cache-Control"); !strings.Contains(cc, "max-age") {
@@ -516,7 +516,7 @@ func BenchmarkIntegrationAvatarRequest(b *testing.B) {
 		if err != nil {
 			b.Fatalf("request failed: %v", err)
 		}
-		io.ReadAll(resp.Body)
+		_, _ = io.ReadAll(resp.Body)
 		resp.Body.Close()
 	}
 }
