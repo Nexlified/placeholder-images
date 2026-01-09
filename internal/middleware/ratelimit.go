@@ -3,15 +3,22 @@ package middleware
 import (
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
 )
 
+// limiterEntry stores a rate limiter and its last access time
+type limiterEntry struct {
+	limiter    *rate.Limiter
+	lastAccess time.Time
+}
+
 // RateLimiter manages per-IP rate limiters
 type RateLimiter struct {
-	limiters map[string]*rate.Limiter
+	limiters map[string]*limiterEntry
 	mu       sync.RWMutex
 	rpm      int           // Requests per minute
 	burst    int           // Burst size
@@ -21,10 +28,10 @@ type RateLimiter struct {
 // NewRateLimiter creates a new rate limiter with the given requests per minute and burst size
 func NewRateLimiter(rpm, burst int) *RateLimiter {
 	rl := &RateLimiter{
-		limiters: make(map[string]*rate.Limiter),
+		limiters: make(map[string]*limiterEntry),
 		rpm:      rpm,
 		burst:    burst,
-		cleanup:  time.Minute * 5, // Clean up stale entries every 5 minutes
+		cleanup:  time.Minute * 10, // Clean up stale entries every 10 minutes
 	}
 
 	// Start cleanup goroutine
@@ -38,27 +45,37 @@ func (rl *RateLimiter) getLimiter(ip string) *rate.Limiter {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	limiter, exists := rl.limiters[ip]
+	entry, exists := rl.limiters[ip]
 	if !exists {
 		// Convert RPM to requests per second for rate.Limit
 		rps := rate.Limit(float64(rl.rpm) / 60.0)
-		limiter = rate.NewLimiter(rps, rl.burst)
-		rl.limiters[ip] = limiter
+		entry = &limiterEntry{
+			limiter:    rate.NewLimiter(rps, rl.burst),
+			lastAccess: time.Now(),
+		}
+		rl.limiters[ip] = entry
+	} else {
+		// Update last access time
+		entry.lastAccess = time.Now()
 	}
 
-	return limiter
+	return entry.limiter
 }
 
-// cleanupStaleEntries periodically removes rate limiters that haven't been used
+// cleanupStaleEntries periodically removes rate limiters that haven't been used recently
 func (rl *RateLimiter) cleanupStaleEntries() {
 	ticker := time.NewTicker(rl.cleanup)
 	defer ticker.Stop()
 
 	for range ticker.C {
 		rl.mu.Lock()
-		// Simple cleanup: remove all entries periodically
-		// More sophisticated approach would track last access time
-		rl.limiters = make(map[string]*rate.Limiter)
+		now := time.Now()
+		// Remove entries that haven't been accessed in the last 10 minutes
+		for ip, entry := range rl.limiters {
+			if now.Sub(entry.lastAccess) > time.Minute*10 {
+				delete(rl.limiters, ip)
+			}
+		}
 		rl.mu.Unlock()
 	}
 }
@@ -66,13 +83,14 @@ func (rl *RateLimiter) cleanupStaleEntries() {
 // getIP extracts the client IP from the request
 func getIP(r *http.Request) string {
 	// Check X-Forwarded-For header first (for proxies)
+	// X-Forwarded-For format: client, proxy1, proxy2, ...
 	forwarded := r.Header.Get("X-Forwarded-For")
 	if forwarded != "" {
-		// X-Forwarded-For can contain multiple IPs, take the first one
-		if ip, _, err := net.SplitHostPort(forwarded); err == nil {
-			return ip
+		// Split by comma and take the first IP (original client)
+		parts := strings.Split(forwarded, ",")
+		if len(parts) > 0 {
+			return strings.TrimSpace(parts[0])
 		}
-		return forwarded
 	}
 
 	// Check X-Real-IP header

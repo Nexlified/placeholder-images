@@ -139,6 +139,38 @@ func TestRateLimiterXForwardedFor(t *testing.T) {
 	}
 }
 
+func TestRateLimiterXForwardedForMultipleIPs(t *testing.T) {
+	// Create a rate limiter with 60 RPM (1 per second) and burst of 1
+	rl := NewRateLimiter(60, 1)
+
+	handler := rl.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	}))
+
+	// First request with X-Forwarded-For containing multiple IPs (client, proxy1, proxy2)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("X-Forwarded-For", "10.0.0.1, 192.168.1.1, 172.16.0.1")
+	req.RemoteAddr = "192.168.1.1:1234"
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	// Second request with same first IP (original client) should be rate limited
+	req = httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("X-Forwarded-For", "10.0.0.1, 192.168.1.2, 172.16.0.2")
+	req.RemoteAddr = "192.168.1.2:1234"
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected status 429, got %d", rec.Code)
+	}
+}
+
 func TestRateLimiterXRealIP(t *testing.T) {
 	// Create a rate limiter with 60 RPM (1 per second) and burst of 1
 	rl := NewRateLimiter(60, 1)
@@ -231,6 +263,18 @@ func TestGetIP(t *testing.T) {
 			name:          "X-Forwarded-For takes precedence",
 			remoteAddr:    "192.168.1.1:1234",
 			xForwardedFor: "10.0.0.1",
+			expectedIP:    "10.0.0.1",
+		},
+		{
+			name:          "X-Forwarded-For with multiple IPs (takes first)",
+			remoteAddr:    "192.168.1.1:1234",
+			xForwardedFor: "10.0.0.1, 192.168.1.1, 172.16.0.1",
+			expectedIP:    "10.0.0.1",
+		},
+		{
+			name:          "X-Forwarded-For with spaces",
+			remoteAddr:    "192.168.1.1:1234",
+			xForwardedFor: "  10.0.0.1  ,  192.168.1.1  ",
 			expectedIP:    "10.0.0.1",
 		},
 		{
