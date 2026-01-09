@@ -59,11 +59,26 @@ func NewService(renderer *render.Renderer, cache *lru.Cache[string, []byte], cfg
 }
 
 // RegisterRoutes attaches handlers to the provided mux.
-func (s *Service) RegisterRoutes(mux *http.ServeMux) {
+func (s *Service) RegisterRoutes(mux *http.ServeMux, rateLimiter interface{}) {
+	// Type-safe way to handle optional rate limiter
+	var applyRateLimit func(http.Handler) http.Handler
+	
+	// Check if rate limiter is provided and has the right type
+	if rl, ok := rateLimiter.(interface {
+		Middleware(http.Handler) http.Handler
+	}); ok {
+		applyRateLimit = rl.Middleware
+	} else {
+		// No rate limiting - pass through
+		applyRateLimit = func(h http.Handler) http.Handler { return h }
+	}
+
 	mux.HandleFunc("/", s.handleHome)
 	mux.HandleFunc("/play", s.handlePlay)
-	mux.HandleFunc("/avatar/", s.handleAvatar)
-	mux.HandleFunc("/placeholder/", s.handlePlaceholder)
+	// Apply rate limiting to image generation endpoints
+	mux.Handle("/avatar/", applyRateLimit(http.HandlerFunc(s.handleAvatar)))
+	mux.Handle("/placeholder/", applyRateLimit(http.HandlerFunc(s.handlePlaceholder)))
+	// No rate limiting for health, favicon, robots.txt, sitemap.xml
 	mux.HandleFunc("GET /health", s.HandleHealth)
 	mux.HandleFunc("GET /favicon.ico", s.handleFavicon)
 	mux.HandleFunc("GET /robots.txt", s.handleRobotsTxt)
